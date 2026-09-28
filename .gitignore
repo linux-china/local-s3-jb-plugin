@@ -119,3 +119,5 @@ gradle-app.setting
 # End of https://www.toptal.com/developers/gitignore/api/gradle,jetbrains+all
 
 todo.md
+.intellijPlatform
+.kotlin
