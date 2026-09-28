@@ -24,7 +24,7 @@ Features:
 
 - Using the IDE built-in plugin system:
 
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "local-s3-jb-plugin"</kbd> >
+  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "Local S3"</kbd> >
   <kbd>Install</kbd>
 
 - Using JetBrains Marketplace:
