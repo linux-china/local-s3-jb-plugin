@@ -2,6 +2,9 @@
 
 # local-s3-jb-plugin Changelog
 
+## [Unreleased]
+
+
 ## 0.1.0 - 2026-09-27
 
 ### Added
