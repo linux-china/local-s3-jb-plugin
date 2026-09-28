@@ -22,6 +22,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <errorHandler implementation="com.intellij.diagnostic.JetBrainsMarketplaceErrorReportSubmitter"/>
+        <postStartupActivity implementation="com.github.linuxchina.locals3jbplugin.startup.StartLocalS3Activity"/>
         <applicationConfigurable
                 id="com.github.linuxchina.locals3.settings"
                 parentId="tools"
