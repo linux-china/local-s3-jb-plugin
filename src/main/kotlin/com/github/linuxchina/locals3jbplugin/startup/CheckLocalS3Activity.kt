@@ -1,14 +1,15 @@
 package com.github.linuxchina.locals3jbplugin.startup
 
 import com.github.linuxchina.locals3jbplugin.settings.LocalS3Settings
+import com.github.linuxchina.locals3jbplugin.settings.LocalS3SettingsListener
 import com.intellij.bigdatatools.awsBase.connection.auth.AuthenticationType
 import com.intellij.bigdatatools.awsBase.settings.AwsCompatibleConnectionDataBase
 import com.intellij.credentialStore.Credentials
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.jetbrains.bigdatatools.common.filestorages.BucketFilterType
 import com.jetbrains.bigdatatools.common.settings.GlobalConnectionSettings
-import com.jetbrains.bigdatatools.common.settings.manager.RfsConnectionDataManager
 import kotlinx.coroutines.delay
 import org.com.jetbrains.bigdatatools.S3ConnectionGroup
 import org.com.jetbrains.bigdatatools.aws.s3.S3ConnectionData
@@ -17,53 +18,76 @@ import kotlin.time.Duration.Companion.seconds
 class CheckLocalS3Activity : ProjectActivity {
     override suspend fun execute(project: Project) {
         delay(12.seconds)
-        checkLocalS3Connect(project)
+        LocalS3Connection.sync()
     }
+}
 
-    fun checkLocalS3Connect(project: Project) {
-        val connectionDataManager = RfsConnectionDataManager.instance ?: return
-        val existingConnection = connectionDataManager.getConnections(project).firstOrNull {
-            it.innerId == LOCAL_S3_CONNECTION_ID ||
-                    it is S3ConnectionData && (it.name == LOCAL_S3_CONNECTION_NAME || it.name == LOCAL_S3_CONNECTION_NAME2)
+/**
+ * Re-syncs the Big Data Tools connection after the Local S3 settings change.
+ */
+class SyncLocalS3ConnectionListener : LocalS3SettingsListener {
+    override fun settingsChanged() {
+        // Reading and writing credentials goes through PasswordSafe, so keep it off the EDT.
+        ApplicationManager.getApplication().executeOnPooledThread {
+            LocalS3Connection.sync()
         }
+    }
+}
 
-        if (existingConnection?.innerId == LOCAL_S3_CONNECTION_ID &&
-            existingConnection is S3ConnectionData
-        ) {
+internal object LocalS3Connection {
+    private const val LOCAL_S3_CONNECTION_ID = "com.github.linuxchina.locals3.connection"
+    private const val LOCAL_S3_CONNECTION_NAME = "Local S3"
+    private const val LOCAL_S3_DEFAULT_REGION = "us-east-1"
+
+    /**
+     * Creates the Local S3 connection, or recreates it when its endpoint, credentials or TLS flag
+     * no longer match the current settings.
+     */
+    @Synchronized
+    fun sync() {
+        val connectionSettings = GlobalConnectionSettings.getInstance()
+        val settings = LocalS3Settings.getInstance()
+        val existingConnection = connectionSettings.getConnections().firstOrNull { it.innerId == LOCAL_S3_CONNECTION_ID }
+
+        if (existingConnection is S3ConnectionData && existingConnection.matches(settings)) {
             return
         }
-
-        val settings = LocalS3Settings.getInstance()
-        val connectionData = S3ConnectionGroup().createBlankData(
-            LOCAL_S3_CONNECTION_ID,
-            false
-        ).apply {
-            name = LOCAL_S3_CONNECTION_NAME
-            useCustomEndpoint = true
-            customEndpoint = settings.endpoint
-            customRegion = LOCAL_S3_DEFAULT_REGION
-            region = LOCAL_S3_DEFAULT_REGION
-            activeAuthenticationType = AuthenticationType.KEY_PAIR.id
-            setCredentials(
-                Credentials(settings.accessKeyId, settings.secretAccessKey),
-                AwsCompatibleConnectionDataBase.SECRET_KEY_ID
-            )
-            profileName = "default"
-            isEnabled = true
-            isMultiBucketSupport = true
-            isBucketSourceCustom = false
-            bucketFilterType = BucketFilterType.CONTAINS
-            bucketFilter = ""
-            bucket = ""
-            trustAllSsl = settings.tlsEnabled
+        if (existingConnection != null) {
+            connectionSettings.removeConnection(LOCAL_S3_CONNECTION_ID)
         }
-        GlobalConnectionSettings.getInstance().addConnection(connectionData)
+        connectionSettings.addConnection(createConnectionData(settings))
     }
 
-    private companion object {
-        const val LOCAL_S3_CONNECTION_ID = "com.github.linuxchina.locals3.connection"
-        const val LOCAL_S3_CONNECTION_NAME = "Local S3"
-        const val LOCAL_S3_CONNECTION_NAME2 = "LocalS3"
-        const val LOCAL_S3_DEFAULT_REGION = "us-east-1"
+    private fun S3ConnectionData.matches(settings: LocalS3Settings): Boolean {
+        val credentials = getCredentials(AwsCompatibleConnectionDataBase.SECRET_KEY_ID)
+        return useCustomEndpoint &&
+                customEndpoint == settings.endpoint &&
+                trustAllSsl == settings.tlsEnabled &&
+                credentials?.userName == settings.accessKeyId &&
+                credentials.getPasswordAsString() == settings.secretAccessKey
+    }
+
+    private fun createConnectionData(settings: LocalS3Settings) = S3ConnectionGroup().createBlankData(
+        LOCAL_S3_CONNECTION_ID,
+        false
+    ).apply {
+        name = LOCAL_S3_CONNECTION_NAME
+        useCustomEndpoint = true
+        customEndpoint = settings.endpoint
+        customRegion = LOCAL_S3_DEFAULT_REGION
+        region = LOCAL_S3_DEFAULT_REGION
+        activeAuthenticationType = AuthenticationType.KEY_PAIR.id
+        setCredentials(
+            Credentials(settings.accessKeyId, settings.secretAccessKey),
+            AwsCompatibleConnectionDataBase.SECRET_KEY_ID
+        )
+        profileName = "default"
+        isEnabled = true
+        isMultiBucketSupport = true
+        isBucketSourceCustom = false
+        bucketFilterType = BucketFilterType.CONTAINS
+        bucketFilter = ""
+        bucket = ""
+        trustAllSsl = settings.tlsEnabled
     }
 }

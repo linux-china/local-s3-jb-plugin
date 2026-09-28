@@ -7,4 +7,9 @@
         <postStartupActivity implementation="com.github.linuxchina.locals3jbplugin.startup.CheckLocalS3Activity"/>
     </extensions>
 
+    <applicationListeners>
+        <listener class="com.github.linuxchina.locals3jbplugin.startup.SyncLocalS3ConnectionListener"
+                  topic="com.github.linuxchina.locals3jbplugin.settings.LocalS3SettingsListener"/>
+    </applicationListeners>
+
 </idea-plugin>

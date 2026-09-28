@@ -2,6 +2,7 @@ package com.github.linuxchina.locals3jbplugin.settings
 
 import com.github.linuxchina.locals3jbplugin.MyBundle
 import com.github.linuxchina.locals3jbplugin.services.LocalS3Service
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.ui.dsl.builder.bindIntText
@@ -81,6 +82,9 @@ class LocalS3Configurable : BoundConfigurable(MyBundle["settings.displayName"]) 
         super.apply()
         if (restartRequired) {
             service<LocalS3Service>().restart()
+            ApplicationManager.getApplication().messageBus
+                .syncPublisher(LocalS3SettingsListener.TOPIC)
+                .settingsChanged()
         }
     }
 }
