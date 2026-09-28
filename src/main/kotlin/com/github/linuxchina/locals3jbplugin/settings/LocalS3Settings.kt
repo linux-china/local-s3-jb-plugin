@@ -1,5 +1,6 @@
 package com.github.linuxchina.locals3jbplugin.settings
 
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.components.*
 import com.intellij.util.PlatformUtils
 import java.nio.file.Files
@@ -91,27 +92,27 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         const val DEFAULT_SECRET_ACCESS_KEY = "admin"
         const val DEFAULT_BUCKETS = "demo-bucket"
         val DEFAULT_DATA_PATH: String by lazy {
-            Path.of(System.getProperty("user.home"), ".locals3", currentProductCode()).toString()
+            Path.of(System.getProperty("user.home"), ".locals3", currentProductName()).toString()
         }
 
         fun getInstance(): LocalS3Settings = service()
 
-        private fun currentProductCode(): String {
+        private fun currentProductName(): String {
             return System.getProperty("idea.platform.prefix", "Idea")
         }
 
         private fun getProductListenPort(): Int {
-            val platformPrefix = System.getProperty("idea.platform.prefix", "Idea")
-            return when (platformPrefix.lowercase()) {
-                "idea" -> 29090
-                "clion" -> 29091
-                "datagrip" -> 29092
-                "goland" -> 29093
-                "python", "pycharm" -> 29094
-                "phpstorm" -> 29095
-                "ruby", "rubymine" -> 29096
-                "rustrover" -> 29097
-                "webstorm" -> 29098
+            val productCode = ApplicationInfo.getInstance().build.productCode
+            return when (productCode.lowercase()) {
+                "idea", "iu" -> 29090
+                "clion", "cl" -> 29091
+                "datagrip", "dg" -> 29092
+                "goland", "go" -> 29093
+                "python", "pycharm", "py" -> 29094
+                "phpstorm", "ps" -> 29095
+                "ruby", "rubymine", "rm" -> 29096
+                "rustrover", "rr" -> 29097
+                "webstorm", "ws" -> 29098
                 else -> 29099
             }
         }
