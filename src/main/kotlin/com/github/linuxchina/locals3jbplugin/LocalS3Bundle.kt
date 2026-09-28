@@ -7,7 +7,7 @@ import org.jetbrains.annotations.PropertyKey
 @NonNls
 private const val BUNDLE = "messages.LocalS3Bundle"
 
-object MyBundle : DynamicBundle(BUNDLE) {
+object LocalS3Bundle : DynamicBundle(BUNDLE) {
 
     operator fun get(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) =
         getMessage(key, *params)
