@@ -11,9 +11,15 @@ class LocalS3Service : Disposable {
     var localS3: LocalS3? = null
 
     @Synchronized
-    fun start() {
-        stop()
+    fun isRunning(): Boolean {
+        return localS3?.isRunning ?: false
+    }
 
+    @Synchronized
+    fun start() {
+        if (isRunning()) {
+            return
+        }
         val settings = LocalS3Settings.getInstance()
         val dataDirectory = settings.ensureDataDirectory()
         val builder = LocalS3.builder()
