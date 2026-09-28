@@ -53,7 +53,7 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         }
 
     val endpoint: String
-        get() = "${if (tlsEnabled) "https" else "http"}://$host:$port"
+        get() = "${if (tlsEnabled) "https" else "http"}://$DEFAULT_HOST:$port"
 
     val bucketNames: List<String>
         get() = buckets.split(',')
