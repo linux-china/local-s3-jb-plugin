@@ -21,6 +21,7 @@
     </applicationListeners>
 
     <extensions defaultExtensionNs="com.intellij">
+        <errorHandler implementation="com.intellij.diagnostic.JetBrainsMarketplaceErrorReportSubmitter"/>
         <applicationConfigurable
                 id="com.github.linuxchina.locals3.settings"
                 parentId="tools"
