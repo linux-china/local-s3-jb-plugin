@@ -1,9 +1,24 @@
 # local-s3-jb-plugin
 
-![Build](https://github.com/linux-china/local-s3-jb-plugin/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
 
+<!-- Plugin description -->
+**JetBrains Local S3 Plugin** is a plugin to Add S3 capabilities in JetBrains IDEs,
+and you can test S3 service quickly during development.
+
+After the plugin installed, and an S3 server will be started automatically.
+
+Features:
+
+- Light and fast: only Netty and Jackson required
+- S3 compatible API: http://localhost:29090
+- Credential support
+- TLS support
+- IceBerg REST Catalog
+- Admin UI: http://localhost:29090/_admin/ui
+- Web Hosting: http://localhost:29090
+- Big Data Tools compatible
+
+<!-- Plugin description end -->
 
 ## Installation
 

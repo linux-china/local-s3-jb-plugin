@@ -1,6 +1,6 @@
 import org.jetbrains.intellij.platform.gradle.extensions.intellijPlatform
 
-rootProject.name = "Local S3 JetBrains Plugin"
+rootProject.name = "local-s3-jb-plugin"
 
 dependencyResolutionManagement {
     repositories {
