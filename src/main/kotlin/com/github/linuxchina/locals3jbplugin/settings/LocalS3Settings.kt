@@ -2,7 +2,6 @@ package com.github.linuxchina.locals3jbplugin.settings
 
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.components.*
-import com.intellij.util.PlatformUtils
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -92,27 +91,26 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         const val DEFAULT_SECRET_ACCESS_KEY = "admin"
         const val DEFAULT_BUCKETS = "demo-bucket"
         val DEFAULT_DATA_PATH: String by lazy {
-            Path.of(System.getProperty("user.home"), ".locals3", currentProductName()).toString()
+            Path.of(System.getProperty("user.home"), ".locals3", currentProductCode()).toString()
         }
 
         fun getInstance(): LocalS3Settings = service()
 
-        private fun currentProductName(): String {
-            return System.getProperty("idea.platform.prefix", "Idea")
+        private fun currentProductCode(): String {
+            return ApplicationInfo.getInstance().build.productCode.ifEmpty { "IU" }
         }
 
         private fun getProductListenPort(): Int {
-            val productCode = ApplicationInfo.getInstance().build.productCode
-            return when (productCode.lowercase()) {
-                "idea", "iu" -> 29090
-                "clion", "cl" -> 29091
-                "datagrip", "dg" -> 29092
-                "goland", "go" -> 29093
-                "python", "pycharm", "py" -> 29094
-                "phpstorm", "ps" -> 29095
-                "ruby", "rubymine", "rm" -> 29096
-                "rustrover", "rr" -> 29097
-                "webstorm", "ws" -> 29098
+            return when (currentProductCode()) {
+                "IU", "IC" -> 29090
+                "CL" -> 29091
+                "DB" -> 29092
+                "GO" -> 29093
+                "PY", "PC" -> 29094
+                "PS" -> 29095
+                "RM" -> 29096
+                "RR" -> 29097
+                "WS" -> 29098
                 else -> 29099
             }
         }
