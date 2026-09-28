@@ -2,7 +2,7 @@
 <idea-plugin>
     <id>com.github.linuxchina.locals3</id>
     <name>Local S3</name>
-    <vendor>linux-china</vendor>
+    <vendor>linux_china</vendor>
     <description><![CDATA[
         <p><b>Local S3</b> is a plugin to supply Local Server inside JetBrains to test S3 service for development.</p>
         <p>The main goal of this plugin is to speed up the development setup with S3.</p>
