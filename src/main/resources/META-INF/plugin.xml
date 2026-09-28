@@ -1,19 +1,26 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.linuxchina.locals3jbplugin</id>
-    <name>local-s3-jb-plugin</name>
+    <id>com.github.linuxchina.locals3</id>
+    <name>Local S3</name>
     <vendor>linux-china</vendor>
     <description><![CDATA[
-        <p><b>local-s3-jb-plugin</b> is a repository that provides a pure template to make it easier to create a new plugin project.</p>
-        <p>The main goal of this template is to speed up the setup phase of plugin development for both new and experienced developers by preconfiguring the project scaffold and CI, linking to the proper documentation pages, and keeping everything organized.</p>
+        <p><b>Local S3</b> is a plugin to supply Local Server inside JetBrains to test S3 service for development.</p>
+        <p>The main goal of this plugin is to speed up the development setup with S3.</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <depends optional="true" config-file="locals3-bigdata.xml">com.intellij.bigdatatools.rfs</depends>
+
+    <resource-bundle>messages.LocalS3Bundle</resource-bundle>
+
+    <applicationListeners>
+        <listener
+                class="com.github.linuxchina.locals3jbplugin.startup.LocalS3LifecycleListener"
+                topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.linuxchina.locals3jbplugin.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.linuxchina.locals3jbplugin.startup.MyProjectActivity" />
+
     </extensions>
 </idea-plugin>

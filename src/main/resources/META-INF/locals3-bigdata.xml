@@ -1,0 +1,5 @@
+<idea-plugin>
+    <depends>com.intellij.bigdatatools.core</depends>
+    <depends>com.intellij.bigdatatools.rfs</depends>
+
+</idea-plugin>
