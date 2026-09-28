@@ -21,5 +21,10 @@
     </applicationListeners>
 
     <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable
+                id="com.github.linuxchina.locals3.settings"
+                parentId="tools"
+                displayName="Local S3"
+                instance="com.github.linuxchina.locals3jbplugin.settings.LocalS3Configurable"/>
     </extensions>
 </idea-plugin>

@@ -1,5 +1,6 @@
 package com.github.linuxchina.locals3jbplugin.startup
 
+import com.github.linuxchina.locals3jbplugin.settings.LocalS3Settings
 import com.intellij.bigdatatools.awsBase.connection.auth.AuthenticationType
 import com.intellij.bigdatatools.awsBase.settings.AwsCompatibleConnectionDataBase
 import com.intellij.credentialStore.Credentials
@@ -32,18 +33,19 @@ class CheckLocalS3Activity : ProjectActivity {
             return
         }
 
+        val settings = LocalS3Settings.getInstance()
         val connectionData = S3ConnectionGroup().createBlankData(
             LOCAL_S3_CONNECTION_ID,
             false
         ).apply {
             name = LOCAL_S3_CONNECTION_NAME
             useCustomEndpoint = true
-            customEndpoint = "http://127.0.0.1:29090"
+            customEndpoint = settings.endpoint
             customRegion = "us-east-1"
             region = "us-east-1"
             activeAuthenticationType = AuthenticationType.KEY_PAIR.id
             setCredentials(
-                Credentials("admin", "admin"),
+                Credentials(settings.accessKeyId, settings.secretAccessKey),
                 AwsCompatibleConnectionDataBase.SECRET_KEY_ID
             )
             profileName = "default"
@@ -54,7 +56,7 @@ class CheckLocalS3Activity : ProjectActivity {
             bucketFilter = ""
             bucket = ""
             bucketName = ""
-            trustAllSsl = true
+            trustAllSsl = settings.tlsEnabled
         }
         GlobalConnectionSettings.getInstance().addConnection(connectionData)
     }
