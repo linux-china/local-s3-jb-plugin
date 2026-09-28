@@ -1,6 +1,7 @@
 <idea-plugin>
     <depends>com.intellij.bigdatatools.core</depends>
     <depends>com.intellij.bigdatatools.rfs</depends>
+    <depends>intellij.bigdatatools.awsBase</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="com.github.linuxchina.locals3jbplugin.startup.CheckLocalS3Activity"/>
