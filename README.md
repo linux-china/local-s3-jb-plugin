@@ -5,7 +5,7 @@
 **JetBrains Local S3 Plugin** is a plugin to Add S3 capabilities in JetBrains IDEs,
 and you can test S3 service quickly during development.
 
-After the plugin installed, and an S3 server will be started automatically.
+After project opened, and an S3 server will be started automatically.
 
 Features:
 
