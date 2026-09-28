@@ -3,6 +3,7 @@ package com.github.linuxchina.locals3jbplugin.services
 import com.github.linuxchina.locals3jbplugin.LocalS3Bundle
 import com.github.linuxchina.locals3jbplugin.settings.LocalS3Configurable
 import com.github.linuxchina.locals3jbplugin.settings.LocalS3Settings
+import com.github.linuxchina.locals3jbplugin.settings.LocalS3SettingsListener
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationAction
 import com.intellij.notification.NotificationGroupManager
@@ -12,6 +13,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.options.ShowSettingsUtil
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.robothy.s3.rest.LocalS3
 import com.robothy.s3.rest.bootstrap.LocalS3Mode
@@ -78,6 +81,21 @@ class LocalS3Service : Disposable {
     fun restart(project: Project? = null): Boolean {
         stop()
         return start(project)
+    }
+
+    /**
+     * Restarts Local S3 off the EDT with a background progress, e.g. after the settings are applied, and notifies
+     * [LocalS3SettingsListener]s only if it is available afterward, so that integrations such as Big Data Tools
+     * don't sync to an endpoint that isn't up.
+     */
+    fun restartInBackground(project: Project? = null) {
+        object : Task.Backgroundable(project, LocalS3Bundle["progress.restart.title"], false) {
+            override fun run(indicator: ProgressIndicator) {
+                if (restart(project)) {
+                    publishSettingsChanged()
+                }
+            }
+        }.queue()
     }
 
     @Synchronized
@@ -155,9 +173,20 @@ class LocalS3Service : Disposable {
                 ShowSettingsUtil.getInstance().showSettingsDialog(project, LocalS3Configurable::class.java)
             })
             addAction(NotificationAction.createSimpleExpiring(LocalS3Bundle["notification.action.retry"]) {
-                ApplicationManager.getApplication().executeOnPooledThread { start(project) }
+                ApplicationManager.getApplication().executeOnPooledThread {
+                    // The failed start may follow a settings change that integrations haven't been told about.
+                    if (start(project)) {
+                        publishSettingsChanged()
+                    }
+                }
             })
         }
+    }
+
+    private fun publishSettingsChanged() {
+        ApplicationManager.getApplication().messageBus
+            .syncPublisher(LocalS3SettingsListener.TOPIC)
+            .settingsChanged()
     }
 
     private fun notify(

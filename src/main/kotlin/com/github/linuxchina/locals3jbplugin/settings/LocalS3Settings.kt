@@ -61,6 +61,11 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
             .filter(String::isNotEmpty)
             .distinct()
 
+    /**
+     * The settings that the running server depends on: a change of any of them requires a restart.
+     */
+    fun serverConfig() = ServerConfig(host, port, tlsEnabled, dataPath, accessKeyId, secretAccessKey, bucketNames)
+
     fun ensureDataDirectory(): Path = Path.of(dataPath)
         .toAbsolutePath()
         .normalize()
@@ -81,6 +86,16 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         var buckets: String = DEFAULT_BUCKETS
         var dataPath: String = DEFAULT_DATA_PATH
     }
+
+    data class ServerConfig(
+        val host: String,
+        val port: Int,
+        val tlsEnabled: Boolean,
+        val dataPath: String,
+        val accessKeyId: String,
+        val secretAccessKey: String,
+        val bucketNames: List<String>,
+    )
 
     companion object {
         const val DEFAULT_HOST = "127.0.0.1"

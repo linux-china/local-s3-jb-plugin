@@ -2,7 +2,6 @@ package com.github.linuxchina.locals3jbplugin.settings
 
 import com.github.linuxchina.locals3jbplugin.LocalS3Bundle
 import com.github.linuxchina.locals3jbplugin.services.LocalS3Service
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.ui.dsl.builder.bindIntText
@@ -78,13 +77,10 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
     }
 
     override fun apply() {
-        val restartRequired = isModified
+        val previousServerConfig = settings.serverConfig()
         super.apply()
-        if (restartRequired) {
-            service<LocalS3Service>().restart()
-            ApplicationManager.getApplication().messageBus
-                .syncPublisher(LocalS3SettingsListener.TOPIC)
-                .settingsChanged()
+        if (settings.serverConfig() != previousServerConfig) {
+            service<LocalS3Service>().restartInBackground()
         }
     }
 }
