@@ -6,6 +6,7 @@ import com.intellij.credentialStore.Credentials
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.jetbrains.bigdatatools.common.filestorages.BucketFilterType
+import com.jetbrains.bigdatatools.common.settings.GlobalConnectionSettings
 import com.jetbrains.bigdatatools.common.settings.manager.RfsConnectionDataManager
 import kotlinx.coroutines.delay
 import org.com.jetbrains.bigdatatools.S3ConnectionGroup
@@ -55,7 +56,7 @@ class CheckLocalS3Activity : ProjectActivity {
             bucketName = ""
             trustAllSsl = true
         }
-        connectionDataManager.addConnection(project, connectionData)
+        GlobalConnectionSettings.getInstance().addConnection(connectionData)
     }
 
     private companion object {
