@@ -1,11 +1,7 @@
 package com.github.linuxchina.locals3jbplugin.settings
 
-import com.intellij.openapi.application.ApplicationInfo
-import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.State
-import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
+import com.intellij.openapi.components.*
+import com.intellij.util.PlatformUtils
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -88,7 +84,9 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
 
     companion object {
         const val DEFAULT_HOST = "127.0.0.1"
-        const val DEFAULT_PORT = 29090
+        val DEFAULT_PORT: Int by lazy {
+            getProductListenPort()
+        }
         const val DEFAULT_ACCESS_KEY_ID = "admin"
         const val DEFAULT_SECRET_ACCESS_KEY = "admin"
         const val DEFAULT_BUCKETS = "demo-bucket"
@@ -99,7 +97,23 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         fun getInstance(): LocalS3Settings = service()
 
         private fun currentProductCode(): String {
-            return ApplicationInfo.getInstance().versionName.replace(" ", "")
+            return System.getProperty("idea.platform.prefix", "Idea")
+        }
+
+        private fun getProductListenPort(): Int {
+            val platformPrefix = System.getProperty("idea.platform.prefix", "Idea")
+            return when (platformPrefix.lowercase()) {
+                "idea" -> 29090
+                "clion" -> 29091
+                "datagrip" -> 29092
+                "goland" -> 29093
+                "python", "pycharm" -> 29094
+                "phpstorm" -> 29095
+                "ruby", "rubymine" -> 29096
+                "rustrover" -> 29097
+                "webstorm" -> 29098
+                else -> 29099
+            }
         }
     }
 }
