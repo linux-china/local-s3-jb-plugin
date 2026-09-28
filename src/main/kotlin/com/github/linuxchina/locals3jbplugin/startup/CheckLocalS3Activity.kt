@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class CheckLocalS3Activity : ProjectActivity {
     override suspend fun execute(project: Project) {
-        delay(15.seconds)
+        delay(12.seconds)
         checkLocalS3Connect(project)
     }
 
@@ -41,8 +41,8 @@ class CheckLocalS3Activity : ProjectActivity {
             name = LOCAL_S3_CONNECTION_NAME
             useCustomEndpoint = true
             customEndpoint = settings.endpoint
-            customRegion = "us-east-1"
-            region = "us-east-1"
+            customRegion = LOCAL_S3_DEFAULT_REGION
+            region = LOCAL_S3_DEFAULT_REGION
             activeAuthenticationType = AuthenticationType.KEY_PAIR.id
             setCredentials(
                 Credentials(settings.accessKeyId, settings.secretAccessKey),
@@ -55,7 +55,6 @@ class CheckLocalS3Activity : ProjectActivity {
             bucketFilterType = BucketFilterType.CONTAINS
             bucketFilter = ""
             bucket = ""
-            bucketName = ""
             trustAllSsl = settings.tlsEnabled
         }
         GlobalConnectionSettings.getInstance().addConnection(connectionData)
@@ -65,5 +64,6 @@ class CheckLocalS3Activity : ProjectActivity {
         const val LOCAL_S3_CONNECTION_ID = "com.github.linuxchina.locals3.connection"
         const val LOCAL_S3_CONNECTION_NAME = "Local S3"
         const val LOCAL_S3_CONNECTION_NAME2 = "LocalS3"
+        const val LOCAL_S3_DEFAULT_REGION = "us-east-1"
     }
 }
