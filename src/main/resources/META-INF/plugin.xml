@@ -14,12 +14,6 @@
 
     <resource-bundle>messages.LocalS3Bundle</resource-bundle>
 
-    <applicationListeners>
-        <listener
-                class="com.github.linuxchina.locals3jbplugin.startup.LocalS3LifecycleListener"
-                topic="com.intellij.ide.AppLifecycleListener"/>
-    </applicationListeners>
-
     <extensions defaultExtensionNs="com.intellij">
         <errorHandler implementation="com.intellij.diagnostic.JetBrainsMarketplaceErrorReportSubmitter"/>
         <postStartupActivity implementation="com.github.linuxchina.locals3jbplugin.startup.StartLocalS3Activity"/>
