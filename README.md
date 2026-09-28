@@ -9,11 +9,11 @@ After the plugin installed, and an S3 server will be started automatically.
 
 Features:
 
-- Light and fast: only Netty and Jackson required
+- Light and fast: only Netty Jackson 3, and H2 MVStore dependencies 
 - S3 compatible API: http://localhost:29090
 - Credential support
 - TLS support
-- IceBerg REST Catalog
+- IceBerg REST Catalog: http://localhost:29090/iceberg
 - Admin UI: http://localhost:29090/_admin/ui
 - Web Hosting: http://localhost:29090
 - Big Data Tools compatible
