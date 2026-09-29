@@ -78,7 +78,7 @@ class OpenLocalS3AdminUiAction : LocalS3Action() {
     override fun isEnabled(status: LocalS3Status) = status.isAvailable
 
     override fun actionPerformed(e: AnActionEvent) {
-        BrowserUtil.browse(LocalS3Service.adminUiUrl(LocalS3Settings.getInstance().endpoint))
+        BrowserUtil.browse(LocalS3Service.adminUiUrl(LocalS3Settings.getInstance().httpEndpoint))
     }
 }
 
