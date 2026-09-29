@@ -1,32 +1,21 @@
 package com.github.linuxchina.locals3jbplugin.startup
 
+import com.github.linuxchina.locals3jbplugin.services.LocalS3StateListener
 import com.github.linuxchina.locals3jbplugin.settings.LocalS3Settings
-import com.github.linuxchina.locals3jbplugin.settings.LocalS3SettingsListener
 import com.intellij.bigdatatools.awsBase.connection.auth.AuthenticationType
 import com.intellij.bigdatatools.awsBase.settings.AwsCompatibleConnectionDataBase
 import com.intellij.credentialStore.Credentials
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.startup.ProjectActivity
 import com.jetbrains.bigdatatools.common.filestorages.BucketFilterType
 import com.jetbrains.bigdatatools.common.settings.GlobalConnectionSettings
-import kotlinx.coroutines.delay
 import org.com.jetbrains.bigdatatools.S3ConnectionGroup
 import org.com.jetbrains.bigdatatools.aws.s3.S3ConnectionData
-import kotlin.time.Duration.Companion.seconds
-
-class CheckLocalS3Activity : ProjectActivity {
-    override suspend fun execute(project: Project) {
-        delay(12.seconds)
-        LocalS3Connection.sync()
-    }
-}
 
 /**
- * Re-syncs the Big Data Tools connection after the Local S3 settings change.
+ * Syncs the Big Data Tools connection once Local S3 is up, including after a restart caused by a settings change.
  */
-class SyncLocalS3ConnectionListener : LocalS3SettingsListener {
-    override fun settingsChanged() {
+class SyncLocalS3ConnectionListener : LocalS3StateListener {
+    override fun started(endpoint: String) {
         // Reading and writing credentials goes through PasswordSafe, so keep it off the EDT.
         ApplicationManager.getApplication().executeOnPooledThread {
             LocalS3Connection.sync()

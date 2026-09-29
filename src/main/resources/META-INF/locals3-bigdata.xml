@@ -3,13 +3,9 @@
     <depends>com.intellij.bigdatatools.rfs</depends>
     <depends>intellij.bigdatatools.awsBase</depends>
 
-    <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="com.github.linuxchina.locals3jbplugin.startup.CheckLocalS3Activity"/>
-    </extensions>
-
     <applicationListeners>
         <listener class="com.github.linuxchina.locals3jbplugin.startup.SyncLocalS3ConnectionListener"
-                  topic="com.github.linuxchina.locals3jbplugin.settings.LocalS3SettingsListener"/>
+                  topic="com.github.linuxchina.locals3jbplugin.services.LocalS3StateListener"/>
     </applicationListeners>
 
 </idea-plugin>

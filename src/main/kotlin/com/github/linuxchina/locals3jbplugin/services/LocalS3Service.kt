@@ -3,7 +3,6 @@ package com.github.linuxchina.locals3jbplugin.services
 import com.github.linuxchina.locals3jbplugin.LocalS3Bundle
 import com.github.linuxchina.locals3jbplugin.settings.LocalS3Configurable
 import com.github.linuxchina.locals3jbplugin.settings.LocalS3Settings
-import com.github.linuxchina.locals3jbplugin.settings.LocalS3SettingsListener
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationAction
 import com.intellij.notification.NotificationGroupManager
@@ -53,6 +52,8 @@ class LocalS3Service : Disposable {
      * Calling it again is a no-op while Local S3 is available: a shared one is only probed again, and replaced by our
      * own if it has stopped, e.g. because the IDE that started it was closed.
      *
+     * [LocalS3StateListener]s are notified each time Local S3 becomes available, never when it failed to start.
+     *
      * @return `true` if Local S3 is available afterward, either started here or shared with another process.
      */
     @Synchronized
@@ -73,6 +74,7 @@ class LocalS3Service : Disposable {
         }
         try {
             localS3 = buildLocalS3(settings).also(LocalS3::start)
+            publishStarted(settings)
             return true
         } catch (e: Exception) {
             closeQuietly()
@@ -103,16 +105,12 @@ class LocalS3Service : Disposable {
     }
 
     /**
-     * Restarts Local S3 off the EDT with a background progress, e.g. after the settings are applied, and notifies
-     * [LocalS3SettingsListener]s only if it is available afterward, so that integrations such as Big Data Tools
-     * don't sync to an endpoint that isn't up.
+     * Restarts Local S3 off the EDT with a background progress, e.g. after the settings are applied.
      */
     fun restartInBackground(project: Project? = null) {
         object : Task.Backgroundable(project, LocalS3Bundle["progress.restart.title"], false) {
             override fun run(indicator: ProgressIndicator) {
-                if (restart(project)) {
-                    publishSettingsChanged()
-                }
+                restart(project)
             }
         }.queue()
     }
@@ -169,6 +167,7 @@ class LocalS3Service : Disposable {
         }
         sharedEndpoint = settings.endpoint
         thisLogger().info("Reusing Local S3 already running at ${settings.endpoint}")
+        publishStarted(settings)
         notify(
             project,
             NotificationType.INFORMATION,
@@ -201,19 +200,16 @@ class LocalS3Service : Disposable {
             })
             addAction(NotificationAction.createSimpleExpiring(LocalS3Bundle["notification.action.retry"]) {
                 ApplicationManager.getApplication().executeOnPooledThread {
-                    // The failed start may follow a settings change that integrations haven't been told about.
-                    if (start(project)) {
-                        publishSettingsChanged()
-                    }
+                    start(project)
                 }
             })
         }
     }
 
-    private fun publishSettingsChanged() {
+    private fun publishStarted(settings: LocalS3Settings) {
         ApplicationManager.getApplication().messageBus
-            .syncPublisher(LocalS3SettingsListener.TOPIC)
-            .settingsChanged()
+            .syncPublisher(LocalS3StateListener.TOPIC)
+            .started(settings.endpoint)
     }
 
     private fun notify(
