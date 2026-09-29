@@ -143,7 +143,7 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
         /**
          * The maximum number of files imported from a directory, so that a wrong path doesn't import a whole tree.
          */
-        const val MAX_FILES_PER_DIRECTORY = 200
+        const val MAX_FILES_PER_DIRECTORY = 256
 
         /**
          * The files under [directory], recursively and in a stable order, without hidden files such as `.DS_Store`,
