@@ -292,7 +292,7 @@ class LocalS3Service : Disposable {
         }
         if (settings.tlsEnabled) {
             builder.tls {
-                it.selfSigned().required(false)
+                it.certificate(LocalS3TlsCertificates.loadOrCreate()).required(false)
             }
         }
         if (settings.icebergEnabled) {

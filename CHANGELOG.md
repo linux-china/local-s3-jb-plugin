@@ -14,6 +14,7 @@
 ### Fixed
 
 - Iceberg REST catalog was not served, although it was advertised
+- TLS certificate changed on every start: it's now kept in `~/.locals3/tls/`, shared by all IDEs, and can be replaced by your own
 
 ## 0.1.0 - 2026-09-27
 
