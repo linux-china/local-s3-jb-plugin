@@ -68,7 +68,7 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
             }
             row {
                 link(LocalS3Bundle["settings.connection.openAdminUi"]) {
-                    BrowserUtil.browse(LocalS3Service.adminUiUrl(settings.endpoint))
+                    BrowserUtil.browse(LocalS3Service.adminUiUrl(settings.httpEndpoint))
                 }
                 link(LocalS3Bundle["settings.connection.test"]) {
                     testConnection()
