@@ -116,7 +116,6 @@ class CopyLocalS3DotEnvAction : CopyLocalS3ConnectionAction() {
                 appendLine("AWS_ACCESS_KEY_ID=${settings.accessKeyId}")
                 appendLine("AWS_SECRET_ACCESS_KEY=${settings.secretAccessKey}")
             }
-            settings.bucketNames.firstOrNull()?.let { appendLine("AWS_S3_BUCKET=$it") }
         }
     }
 }
