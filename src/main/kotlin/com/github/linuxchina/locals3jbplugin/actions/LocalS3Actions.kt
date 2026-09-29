@@ -57,7 +57,12 @@ class StopLocalS3Action : LocalS3Action() {
     }
 }
 
+/**
+ * Disabled for a shared server: it belongs to another process, so there is nothing to restart here.
+ */
 class RestartLocalS3Action : LocalS3Action() {
+    override fun isEnabled(status: LocalS3Status) = status != LocalS3Status.SHARED
+
     override fun actionPerformed(e: AnActionEvent) {
         runInBackground(e.project, "progress.restart.title") { it.restart(e.project) }
     }
