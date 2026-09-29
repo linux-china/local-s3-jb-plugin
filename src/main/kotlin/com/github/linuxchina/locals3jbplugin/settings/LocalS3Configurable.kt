@@ -115,23 +115,23 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
 
         group(LocalS3Bundle["settings.credentials.group"]) {
             lateinit var accessKeyIdField: Cell<JBTextField>
-            lateinit var secretAccessKeyField: Cell<JBPasswordField>
+            lateinit var secretAccessKeyField: Cell<JBTextField>
             row(LocalS3Bundle["settings.accessKeyId.label"]) {
                 accessKeyIdField = textField()
                     .bindText(settings::accessKeyId)
                     .columns(32)
                     .validationOnApply {
-                        if (it.text.isEmpty() && secretAccessKeyField.component.password.isNotEmpty()) {
+                        if (it.text.isEmpty() && secretAccessKeyField.component.text.isNotEmpty()) {
                             error(LocalS3Bundle["settings.accessKeyId.required"])
                         } else null
                     }
             }
             row(LocalS3Bundle["settings.secretAccessKey.label"]) {
-                secretAccessKeyField = passwordField()
+                secretAccessKeyField = textField()
                     .bindText(settings::secretAccessKey)
                     .columns(32)
                     .validationOnApply {
-                        if (it.password.isEmpty() && accessKeyIdField.component.text.isNotEmpty()) {
+                        if (it.text.isEmpty() && accessKeyIdField.component.text.isNotEmpty()) {
                             error(LocalS3Bundle["settings.secretAccessKey.required"])
                         } else null
                     }
