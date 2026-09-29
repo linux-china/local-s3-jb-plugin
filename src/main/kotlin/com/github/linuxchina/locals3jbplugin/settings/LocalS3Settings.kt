@@ -28,6 +28,15 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
             settingsState.tlsEnabled = value
         }
 
+    /**
+     * Whether Local S3 is started when a project is opened. Not part of [serverConfig]: it doesn't affect the server.
+     */
+    var autoStart: Boolean
+        get() = settingsState.autoStart
+        set(value) {
+            settingsState.autoStart = value
+        }
+
     var accessKeyId: String
         get() = settingsState.accessKeyId
         set(value) {
@@ -84,6 +93,7 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         var host: String = DEFAULT_HOST
         var port: Int = DEFAULT_PORT
         var tlsEnabled: Boolean = false
+        var autoStart: Boolean = true
         var accessKeyId: String = DEFAULT_ACCESS_KEY_ID
         var secretAccessKey: String = DEFAULT_SECRET_ACCESS_KEY
         var buckets: String = DEFAULT_BUCKETS

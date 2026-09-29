@@ -128,6 +128,31 @@ class LocalS3ServiceTest : BasePlatformTestCase() {
         assertEquals(listOf(LocalS3Status.RUNNING, LocalS3Status.STOPPED, LocalS3Status.SHARED), statuses)
     }
 
+    fun testAutoStartIsSkippedAfterStopByUser() {
+        val localS3Service = service<LocalS3Service>()
+
+        localS3Service.autoStart(project)
+        assertTrue(localS3Service.isRunning())
+
+        localS3Service.stop(byUser = true)
+        localS3Service.autoStart(project)
+        assertEquals(LocalS3Status.STOPPED, localS3Service.status())
+
+        // Starting manually re-enables auto start, e.g. after a later stop caused by a restart.
+        assertTrue(localS3Service.start())
+        localS3Service.stop()
+        localS3Service.autoStart(project)
+        assertTrue(localS3Service.isRunning())
+    }
+
+    fun testAutoStartIsSkippedWhenDisabled() {
+        val localS3Service = service<LocalS3Service>()
+        LocalS3Settings.getInstance().autoStart = false
+
+        localS3Service.autoStart(project)
+        assertEquals(LocalS3Status.STOPPED, localS3Service.status())
+    }
+
     /**
      * Simulates a Local S3 started by another IDE on the configured port.
      */

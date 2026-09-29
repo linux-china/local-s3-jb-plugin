@@ -51,6 +51,12 @@ class LocalS3Service : Disposable {
      */
     private var healthCheck: ScheduledFuture<*>? = null
 
+    /**
+     * Set when the user stops Local S3, so that opening another project doesn't start it again in this IDE session.
+     */
+    @Volatile
+    private var stoppedByUser = false
+
     fun status(): LocalS3Status = status
 
     @Synchronized
@@ -60,6 +66,17 @@ class LocalS3Service : Disposable {
 
     @Synchronized
     fun isShared(): Boolean = sharedEndpoint != null
+
+    /**
+     * Starts Local S3 when a project is opened, unless auto start is disabled or the user stopped it in this session.
+     * A shared Local S3 is still taken over if it has stopped, since it was already in use.
+     */
+    fun autoStart(project: Project) {
+        when {
+            isShared() -> takeOverIfSharedServerGone(project)
+            LocalS3Settings.getInstance().autoStart && !stoppedByUser -> start(project)
+        }
+    }
 
     /**
      * Starts Local S3, or reuses the one already listening on the configured port. Failures are reported with a
@@ -74,6 +91,7 @@ class LocalS3Service : Disposable {
      */
     @Synchronized
     fun start(project: Project? = null): Boolean {
+        stoppedByUser = false
         if (isRunning()) {
             return true
         }
@@ -186,8 +204,14 @@ class LocalS3Service : Disposable {
         }.queue()
     }
 
+    /**
+     * @param byUser whether the user asked for it, which disables auto start for the rest of the IDE session.
+     */
     @Synchronized
-    fun stop() {
+    fun stop(byUser: Boolean = false) {
+        if (byUser) {
+            stoppedByUser = true
+        }
         sharedEndpoint = null
         localS3?.let {
             if (it.isRunning) {

@@ -93,6 +93,11 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
                     .bindSelected(settings::tlsEnabled)
                     .comment(LocalS3Bundle["settings.tls.comment"])
             }
+            row {
+                checkBox(LocalS3Bundle["settings.autoStart.label"])
+                    .bindSelected(settings::autoStart)
+                    .comment(LocalS3Bundle["settings.autoStart.comment"])
+            }
         }
 
         group(LocalS3Bundle["settings.storage.group"]) {

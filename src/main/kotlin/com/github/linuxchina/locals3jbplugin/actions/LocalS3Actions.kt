@@ -53,7 +53,7 @@ class StopLocalS3Action : LocalS3Action() {
     override fun isEnabled(status: LocalS3Status) = status == LocalS3Status.RUNNING
 
     override fun actionPerformed(e: AnActionEvent) {
-        runInBackground(e.project, "progress.stop.title") { it.stop() }
+        runInBackground(e.project, "progress.stop.title") { it.stop(byUser = true) }
     }
 }
 
