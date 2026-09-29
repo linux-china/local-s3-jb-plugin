@@ -13,12 +13,11 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.openapi.ui.popup.PopupShowOptions
 import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
-import com.intellij.ui.awt.RelativePoint
 import com.intellij.util.Consumer
-import java.awt.Point
 import java.awt.event.MouseEvent
 import javax.swing.Icon
 
@@ -87,7 +86,7 @@ class LocalS3StatusBarWidget : StatusBarWidget, StatusBarWidget.IconPresentation
             JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
             false,
         )
-        popup.show(RelativePoint(component, Point(0, -popup.content.preferredSize.height)))
+        popup.show(PopupShowOptions.aboveComponent(component))
     }
 
     private fun status() = service<LocalS3Service>().status()
