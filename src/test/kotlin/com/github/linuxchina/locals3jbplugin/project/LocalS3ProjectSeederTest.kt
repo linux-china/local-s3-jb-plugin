@@ -161,6 +161,10 @@ class LocalS3ProjectSeederTest : BasePlatformTestCase() {
         assertEquals("application/json", LocalS3ProjectSeeder.contentType(Path.of("config.json")))
         assertEquals("application/vnd.apache.parquet", LocalS3ProjectSeeder.contentType(Path.of("t.parquet")))
         assertEquals("image/svg+xml", LocalS3ProjectSeeder.contentType(Path.of("logo.svg")))
+        assertEquals(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            LocalS3ProjectSeeder.contentType(Path.of("report.xlsx")),
+        )
         assertEquals("application/octet-stream", LocalS3ProjectSeeder.contentType(Path.of("no-extension")))
     }
 
