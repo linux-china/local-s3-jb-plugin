@@ -43,7 +43,7 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
     var buckets: String
         get() = settingsState.buckets
         set(value) {
-            settingsState.buckets = value
+            settingsState.buckets = value.replace(" ","")
         }
 
     var dataPath: String

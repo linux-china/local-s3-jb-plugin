@@ -120,12 +120,13 @@ class LocalS3Service : Disposable {
             .port(settings.port)
             .mode(LocalS3Mode.PERSISTENCE)
             .dataPath(dataDirectory.toString())
-            .credentials(settings.accessKeyId, settings.secretAccessKey)
             .buckets(*settings.bucketNames.toTypedArray())
             .netty {
                 it.daemonThreads(true)
             }
-
+        if (settings.accessKeyId.isNotEmpty() && settings.secretAccessKey.isNotEmpty()) {
+            builder.credentials(settings.accessKeyId, settings.secretAccessKey)
+        }
         if (settings.tlsEnabled) {
             builder.tls {
                 it.selfSigned().required(true)
@@ -160,15 +161,22 @@ class LocalS3Service : Disposable {
 
     private fun notifyStartFailure(settings: LocalS3Settings, error: Exception, project: Project?) {
         val content = when {
-            error.causes().any { it is BindException || it.message.orEmpty().contains("Address already in use", true) } ->
+            error.causes()
+                .any { it is BindException || it.message.orEmpty().contains("Address already in use", true) } ->
                 LocalS3Bundle["notification.startFailed.portInUse", settings.port]
 
             error.causes().any { it.message.orEmpty().contains("locked", true) } ->
                 LocalS3Bundle["notification.startFailed.dataLocked", settings.dataPath]
 
-            else -> LocalS3Bundle["notification.startFailed.other", error.causes().last().message ?: error.javaClass.simpleName]
+            else -> LocalS3Bundle["notification.startFailed.other", error.causes().last().message
+                ?: error.javaClass.simpleName]
         }
-        notify(project, NotificationType.ERROR, LocalS3Bundle["notification.startFailed.title", settings.endpoint], content) {
+        notify(
+            project,
+            NotificationType.ERROR,
+            LocalS3Bundle["notification.startFailed.title", settings.endpoint],
+            content
+        ) {
             addAction(NotificationAction.createSimpleExpiring(LocalS3Bundle["notification.action.openSettings"]) {
                 ShowSettingsUtil.getInstance().showSettingsDialog(project, LocalS3Configurable::class.java)
             })
@@ -203,7 +211,8 @@ class LocalS3Service : Disposable {
             .notify(project)
     }
 
-    private fun Throwable.causes(): List<Throwable> = generateSequence(this) { it.cause.takeIf { cause -> cause !== it } }.toList()
+    private fun Throwable.causes(): List<Throwable> =
+        generateSequence(this) { it.cause.takeIf { cause -> cause !== it } }.toList()
 
     companion object {
         const val NOTIFICATION_GROUP_ID = "Local S3"
