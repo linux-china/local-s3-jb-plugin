@@ -46,6 +46,10 @@ tasks {
         disabledPlugins.add("com.intellij.swagger")
     }
 
+    buildSearchableOptions {
+        enabled = false
+    }
+
     patchPluginXml {
         version = properties("version")
         sinceBuild.set(properties("pluginSinceBuild"))

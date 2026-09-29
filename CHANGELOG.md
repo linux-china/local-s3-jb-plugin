@@ -31,4 +31,5 @@
 - Iceberg REST Catalog
 - Admin UI: http://127.0.0.1:29090/_admin/ui
 - Web Hosting: http://127.0.0.1:29090
+- Project buckets and seed data: `.locals3.json` at the project root
 
