@@ -16,6 +16,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.robothy.s3.core.service.manager.LocalS3Manager
 import com.robothy.s3.rest.LocalS3
 import com.robothy.s3.rest.bootstrap.LocalS3Mode
 import java.net.BindException
@@ -66,6 +67,19 @@ class LocalS3Service : Disposable {
 
     @Synchronized
     fun isShared(): Boolean = sharedEndpoint != null
+
+    /**
+     * Runs [action] with the manager of the Local S3 started by this IDE, under the service lock so that it isn't
+     * stopped meanwhile.
+     *
+     * @return the result of [action], or `null` if this IDE didn't start Local S3, e.g. it is stopped or shared with
+     * another process, whose data can only be reached through the S3 API.
+     */
+    @Synchronized
+    fun <T> withLocalManager(action: (LocalS3Manager) -> T): T? {
+        val server = localS3?.takeIf { it.isRunning } ?: return null
+        return action(server.s3Manager)
+    }
 
     /**
      * Starts Local S3 when a project is opened, unless auto start is disabled or the user stopped it in this session.
