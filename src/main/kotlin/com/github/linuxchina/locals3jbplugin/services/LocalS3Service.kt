@@ -212,6 +212,21 @@ class LocalS3Service : Disposable {
         if (byUser) {
             stoppedByUser = true
         }
+        shutdown()
+        updateStatus(LocalS3Status.STOPPED)
+    }
+
+    /**
+     * Unlike [stop], doesn't publish the status change: the application and its message bus are being disposed.
+     */
+    @Synchronized
+    override fun dispose() {
+        shutdown()
+        scheduleHealthCheck(false)
+        status = LocalS3Status.STOPPED
+    }
+
+    private fun shutdown() {
         sharedEndpoint = null
         localS3?.let {
             if (it.isRunning) {
@@ -219,11 +234,6 @@ class LocalS3Service : Disposable {
             }
             localS3 = null
         }
-        updateStatus(LocalS3Status.STOPPED)
-    }
-
-    override fun dispose() {
-        stop()
     }
 
     private fun buildLocalS3(settings: LocalS3Settings): LocalS3 {
