@@ -77,12 +77,29 @@ class OpenLocalS3AdminUiAction : LocalS3Action() {
 }
 
 /**
+ * Copies the settings to connect to Local S3 in a client specific format, from the "Copy Connection As" submenu.
+ */
+abstract class CopyLocalS3ConnectionAction : LocalS3Action() {
+    override fun actionPerformed(e: AnActionEvent) {
+        CopyPasteManager.getInstance().setContents(StringSelection(connection(LocalS3Settings.getInstance())))
+    }
+
+    protected abstract fun connection(settings: LocalS3Settings): String
+
+    companion object {
+        /**
+         * Without credentials, Local S3 accepts anonymous requests.
+         */
+        fun hasCredentials(settings: LocalS3Settings): Boolean =
+            settings.accessKeyId.isNotEmpty() && settings.secretAccessKey.isNotEmpty()
+    }
+}
+
+/**
  * Copies the environment variables that AWS SDKs and CLI read to reach Local S3, in `.env` format.
  */
-class CopyLocalS3DotEnvAction : LocalS3Action() {
-    override fun actionPerformed(e: AnActionEvent) {
-        CopyPasteManager.getInstance().setContents(StringSelection(dotEnv(LocalS3Settings.getInstance())))
-    }
+class CopyLocalS3DotEnvAction : CopyLocalS3ConnectionAction() {
+    override fun connection(settings: LocalS3Settings) = dotEnv(settings)
 
     companion object {
         fun dotEnv(settings: LocalS3Settings): String = buildString {
@@ -90,12 +107,78 @@ class CopyLocalS3DotEnvAction : LocalS3Action() {
             appendLine("AWS_ENDPOINT_URL_S3=${settings.endpoint}")
             appendLine("AWS_REGION=${LocalS3Settings.REGION}")
             appendLine("AWS_DEFAULT_REGION=${LocalS3Settings.REGION}")
-            // Without credentials, Local S3 accepts anonymous requests
-            if (settings.accessKeyId.isNotEmpty() && settings.secretAccessKey.isNotEmpty()) {
+            if (hasCredentials(settings)) {
                 appendLine("AWS_ACCESS_KEY_ID=${settings.accessKeyId}")
                 appendLine("AWS_SECRET_ACCESS_KEY=${settings.secretAccessKey}")
             }
             settings.bucketNames.firstOrNull()?.let { appendLine("AWS_S3_BUCKET=$it") }
+        }
+    }
+}
+
+/**
+ * Copies a DuckDB `httpfs` S3 secret. DuckDB always connects without TLS, as it doesn't trust the self-signed certificate.
+ */
+class CopyLocalS3DuckDbSecretAction : CopyLocalS3ConnectionAction() {
+    override fun connection(settings: LocalS3Settings) = duckDbSecret(settings)
+
+    companion object {
+        fun duckDbSecret(settings: LocalS3Settings): String = buildString {
+            appendLine("CREATE OR REPLACE SECRET locals3 (")
+            appendLine("    TYPE s3,")
+            if (hasCredentials(settings)) {
+                appendLine("    KEY_ID ${sqlString(settings.accessKeyId)},")
+                appendLine("    SECRET ${sqlString(settings.secretAccessKey)},")
+            }
+            appendLine("    REGION '${LocalS3Settings.REGION}',")
+            appendLine("    ENDPOINT '${settings.clientHost}:${settings.port}',")
+            appendLine("    URL_STYLE 'path',")
+            appendLine("    USE_SSL false")
+            appendLine(");")
+        }
+
+        private fun sqlString(value: String) = "'${value.replace("'", "''")}'"
+    }
+}
+
+/**
+ * Copies Spring Cloud AWS S3 settings in Spring Boot `application.properties` format.
+ */
+class CopyLocalS3SpringBootPropertiesAction : CopyLocalS3ConnectionAction() {
+    override fun connection(settings: LocalS3Settings) = springBootProperties(settings)
+
+    companion object {
+        fun springBootProperties(settings: LocalS3Settings): String = buildString {
+            appendLine("spring.cloud.aws.s3.endpoint=${settings.endpoint}")
+            appendLine("spring.cloud.aws.s3.path-style-access-enabled=true")
+            appendLine("spring.cloud.aws.region.static=${LocalS3Settings.REGION}")
+            if (hasCredentials(settings)) {
+                appendLine("spring.cloud.aws.credentials.access-key=${settings.accessKeyId}")
+                appendLine("spring.cloud.aws.credentials.secret-key=${settings.secretAccessKey}")
+            }
+        }
+    }
+}
+
+/**
+ * Copies an AWS CLI profile for `~/.aws/config`, used with `aws --profile locals3`.
+ */
+class CopyLocalS3AwsCliProfileAction : CopyLocalS3ConnectionAction() {
+    override fun connection(settings: LocalS3Settings) = awsCliProfile(settings)
+
+    companion object {
+        const val PROFILE_NAME = "locals3"
+
+        fun awsCliProfile(settings: LocalS3Settings): String = buildString {
+            appendLine("[profile $PROFILE_NAME]")
+            appendLine("region = ${LocalS3Settings.REGION}")
+            appendLine("endpoint_url = ${settings.endpoint}")
+            if (hasCredentials(settings)) {
+                appendLine("aws_access_key_id = ${settings.accessKeyId}")
+                appendLine("aws_secret_access_key = ${settings.secretAccessKey}")
+            }
+            appendLine("s3 =")
+            appendLine("    addressing_style = path")
         }
     }
 }

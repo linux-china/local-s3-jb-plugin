@@ -34,8 +34,15 @@
             <separator/>
             <action id="LocalS3.OpenAdminUi" class="com.github.linuxchina.locals3jbplugin.actions.OpenLocalS3AdminUiAction"
                     icon="AllIcons.General.Web"/>
-            <action id="LocalS3.CopyDotEnv" class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3DotEnvAction"
-                    icon="AllIcons.Actions.Copy"/>
+            <group id="LocalS3.CopyConnectionAs" popup="true" icon="AllIcons.Actions.Copy">
+                <action id="LocalS3.CopyDotEnv" class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3DotEnvAction"/>
+                <action id="LocalS3.CopyDuckDbSecret"
+                        class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3DuckDbSecretAction"/>
+                <action id="LocalS3.CopySpringBootProperties"
+                        class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3SpringBootPropertiesAction"/>
+                <action id="LocalS3.CopyAwsCliProfile"
+                        class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3AwsCliProfileAction"/>
+            </group>
             <separator/>
             <action id="LocalS3.OpenSettings" class="com.github.linuxchina.locals3jbplugin.actions.OpenLocalS3SettingsAction"
                     icon="AllIcons.General.Settings"/>

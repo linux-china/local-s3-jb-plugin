@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Added
+
+- Copy Connection As...: `.env`, DuckDB S3 secret, Spring Boot `application.properties` (Spring Cloud AWS) and AWS CLI profile
 
 ## 0.1.0 - 2026-09-27
 
