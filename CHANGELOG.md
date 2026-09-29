@@ -18,7 +18,7 @@
 - S3 compatible API: http://127.0.0.1:29090
 - Credential support
 - TLS support
-- IceBerg REST Catalog
+- Iceberg REST Catalog
 - Admin UI: http://127.0.0.1:29090/_admin/ui
 - Web Hosting: http://127.0.0.1:29090
 
