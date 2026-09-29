@@ -42,7 +42,6 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
 
     private lateinit var hostField: Cell<JBTextField>
     private lateinit var portField: Cell<JBTextField>
-    private lateinit var tlsCheckBox: Cell<JBCheckBox>
 
     /**
      * Disposed with the UI, so that the status subscription and a pending test don't outlive the settings dialog.
@@ -98,7 +97,7 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
                     .columns(8)
             }
             row {
-                tlsCheckBox = checkBox(LocalS3Bundle["settings.tls.label"])
+                checkBox(LocalS3Bundle["settings.tls.label"])
                     .bindSelected(settings::tlsEnabled)
                     .comment(LocalS3Bundle["settings.tls.comment"])
             }
@@ -250,7 +249,9 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
     }
 
     /**
-     * Probes the endpoint of the values in the form, which may not be applied yet.
+     * Probes the endpoint of the values in the form, which may not be applied yet. Like
+     * [LocalS3Service.isLocalS3Listening], it probes over plain HTTP, which the port answers even with TLS enabled,
+     * while the JDK doesn't trust the self-signed certificate of HTTPS.
      */
     private fun testConnection() {
         val port = portField.component.text.trim().toIntOrNull()
@@ -258,7 +259,7 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
             showTestResult(false, LocalS3Bundle["settings.connection.test.invalidPort"])
             return
         }
-        val endpoint = LocalS3Settings.endpointOf(hostField.component.text, port, tlsCheckBox.component.isSelected)
+        val endpoint = LocalS3Settings.endpointOf(hostField.component.text, port, tlsEnabled = false)
         testResultLabel.icon = AllIcons.Process.Step_1
         testResultLabel.text = LocalS3Bundle["settings.connection.test.running", endpoint]
         val disposable = uiDisposable
