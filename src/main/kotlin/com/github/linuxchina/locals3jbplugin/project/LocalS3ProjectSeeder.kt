@@ -9,6 +9,7 @@ import com.robothy.s3.core.service.manager.LocalS3Manager
 import com.robothy.s3.core.util.S3ObjectUtils
 import com.robothy.s3.rest.service.BucketNameValidator
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.Path
 import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.name
@@ -148,14 +149,35 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
         /**
          * The files under [directory], recursively and in a stable order, without hidden files such as `.DS_Store`,
          * and at most one more than [MAX_FILES_PER_DIRECTORY], to tell that there are too many.
+         *
+         * The walk stops as soon as that many files are found, and doesn't enter hidden directories such as `.git`,
+         * so that a wrong path such as `~` doesn't walk a whole tree.
          */
-        private fun listFiles(directory: Path): List<Path> =
-            Files.walk(directory).use { paths ->
-                paths.filter { Files.isRegularFile(it) && !directory.relativize(it).any { part -> part.name.startsWith(".") } }
-                    .sorted()
-                    .limit(MAX_FILES_PER_DIRECTORY + 1L)
-                    .toList()
+        private fun listFiles(directory: Path): List<Path> {
+            val files = mutableListOf<Path>()
+            collectFiles(directory, files)
+            return files
+        }
+
+        /**
+         * Adds the files under [directory] to [files], each directory's entries sorted by name, until [files] holds
+         * more than [MAX_FILES_PER_DIRECTORY] of them.
+         */
+        private fun collectFiles(directory: Path, files: MutableList<Path>) {
+            val entries = Files.newDirectoryStream(directory).use { stream ->
+                stream.filterNot { it.name.startsWith(".") }.sortedBy { it.name }
             }
+            for (entry in entries) {
+                if (files.size > MAX_FILES_PER_DIRECTORY) {
+                    return
+                }
+                when {
+                    // Like Files.walk, don't follow links to directories.
+                    Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS) -> collectFiles(entry, files)
+                    Files.isRegularFile(entry) -> files.add(entry)
+                }
+            }
+        }
 
         /**
          * The key of a file seeded directly: the object path, or the file name under it if it ends with `/` or is

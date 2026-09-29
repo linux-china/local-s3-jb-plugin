@@ -121,6 +121,29 @@ class LocalS3ProjectSeederTest : BasePlatformTestCase() {
         assertEquals(listOf(directory), result.truncatedDirectories)
     }
 
+    fun testSkipsHiddenDirectoriesAndImportsFirstFilesInOrder() {
+        val directory = Files.createDirectories(projectDirectory.resolve("tree"))
+        // Files in a hidden directory don't count toward the limit.
+        val git = Files.createDirectories(directory.resolve(".git/objects"))
+        repeat(LocalS3ProjectSeeder.MAX_FILES_PER_DIRECTORY + 5) {
+            Files.writeString(git.resolve("object-%03d".format(it)), "$it")
+        }
+        Files.writeString(Files.createDirectories(directory.resolve("b")).resolve("b.txt"), "b")
+        repeat(LocalS3ProjectSeeder.MAX_FILES_PER_DIRECTORY) {
+            Files.writeString(Files.createDirectories(directory.resolve("a")).resolve("a-%03d.txt".format(it)), "$it")
+        }
+        Files.writeString(directory.resolve("c.txt"), "c")
+        val config = LocalS3ProjectConfig(seed = mapOf("demo-bucket" to mapOf("tree" to "tree")))
+
+        val result = LocalS3ProjectSeeder(manager, projectDirectory).apply(config)
+
+        assertEquals(LocalS3ProjectSeeder.MAX_FILES_PER_DIRECTORY, result.importedObjects)
+        assertEquals(listOf(directory), result.truncatedDirectories)
+        assertTrue(exists("demo-bucket", "tree/a/a-255.txt"))
+        assertFalse(exists("demo-bucket", "tree/b/b.txt"))
+        assertFalse(exists("demo-bucket", "tree/.git/objects/object-000"))
+    }
+
     fun testReportsMissingPathsAndInvalidBuckets() {
         val config = LocalS3ProjectConfig(
             buckets = listOf("Invalid_Bucket"),
