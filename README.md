@@ -19,6 +19,21 @@ Features:
 - Big Data Tools compatible
 - Project buckets and seed data: `.locals3.json` at the project root
 
+`.locals3.json` file example: 
+
+```json
+{
+  "buckets": [
+    "demo-bucket"
+  ],
+  "seed": {
+    "demo-bucket": {
+      "dataset": "src/test/dataset",
+      "family.csv": "family.csv"
+    }
+  }
+}
+```
 <!-- Plugin description end -->
 
 ## Project buckets and seed data
