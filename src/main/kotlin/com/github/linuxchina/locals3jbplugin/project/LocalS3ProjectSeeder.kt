@@ -1,14 +1,13 @@
 package com.github.linuxchina.locals3jbplugin.project
 
+import com.github.linuxchina.locals3jbplugin.services.createBucketIfAbsent
 import com.intellij.openapi.progress.ProgressIndicator
-import com.robothy.s3.core.exception.BucketNotExistException
 import com.robothy.s3.core.exception.ObjectNotExistException
 import com.robothy.s3.core.exception.VersionedObjectNotExistException
 import com.robothy.s3.core.model.request.GetObjectOptions
 import com.robothy.s3.core.model.request.PutObjectOptions
 import com.robothy.s3.core.service.manager.LocalS3Manager
 import com.robothy.s3.core.util.S3ObjectUtils
-import com.robothy.s3.rest.service.BucketNameValidator
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
@@ -52,7 +51,7 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
         val availableBuckets = config.allBuckets.filter { bucket ->
             // Outside runCatching, which would swallow the cancellation.
             indicator?.checkCanceled()
-            runCatching { if (createBucketIfAbsent(bucket)) createdBuckets += bucket }
+            runCatching { if (manager.createBucketIfAbsent(bucket)) createdBuckets += bucket }
                 .onFailure { errors += "Failed to create bucket $bucket: ${it.message ?: it.javaClass.simpleName}" }
                 .isSuccess
         }.toSet()
@@ -96,22 +95,6 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
     }
 
     private data class Import(val bucket: String, val key: String, val file: Path)
-
-    /**
-     * @return `true` if the bucket was created, `false` if it already existed.
-     */
-    private fun createBucketIfAbsent(bucket: String): Boolean {
-        val bucketService = manager.bucketService()
-        try {
-            bucketService.getBucket(bucket)
-            return false
-        } catch (_: BucketNotExistException) {
-            // The services accept any name: validate it like Local S3 does for the buckets it creates.
-            BucketNameValidator().validate(bucket)
-            bucketService.createBucket(bucket)
-            return true
-        }
-    }
 
     /**
      * Puts the file as the object, overwriting it, so that changes made to the seed files are imported.

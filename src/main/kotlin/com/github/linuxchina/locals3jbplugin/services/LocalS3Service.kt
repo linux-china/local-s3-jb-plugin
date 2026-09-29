@@ -16,7 +16,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.concurrency.AppExecutorUtil
-import com.robothy.s3.core.exception.BucketNotExistException
+import com.robothy.s3.core.exception.DataPathLockedException
 import com.robothy.s3.core.service.manager.LocalS3Manager
 import com.robothy.s3.rest.LocalS3
 import com.robothy.s3.rest.bootstrap.LocalS3Mode
@@ -326,14 +326,9 @@ class LocalS3Service : Disposable {
     }
 
     private fun createMissingBuckets(manager: LocalS3Manager, buckets: List<String>) {
-        val bucketService = manager.bucketService()
         for (bucket in buckets) {
-            try {
-                bucketService.getBucket(bucket)
-            } catch (_: BucketNotExistException) {
-                runCatching { bucketService.createBucket(bucket) }
-                    .onFailure { thisLogger().warn("Failed to create bucket $bucket", it) }
-            }
+            runCatching { manager.createBucketIfAbsent(bucket) }
+                .onFailure { thisLogger().warn("Failed to create bucket $bucket", it) }
         }
     }
 
@@ -520,7 +515,7 @@ class LocalS3Service : Disposable {
     private fun Throwable.isPortInUse(): Boolean =
         causes().any { it is BindException || it.message.orEmpty().contains("Address already in use", true) }
 
-    private fun Throwable.isDataLocked(): Boolean = causes().any { it.message.orEmpty().contains("locked", true) }
+    private fun Throwable.isDataLocked(): Boolean = causes().any { it is DataPathLockedException }
 
     private fun Throwable.isRaceWithOtherProcess(): Boolean = isPortInUse() || isDataLocked()
 
