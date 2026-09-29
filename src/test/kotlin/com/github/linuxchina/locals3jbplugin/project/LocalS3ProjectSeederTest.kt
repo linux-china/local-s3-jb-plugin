@@ -156,6 +156,14 @@ class LocalS3ProjectSeederTest : BasePlatformTestCase() {
         assertEquals(2, result.errors.size)
     }
 
+    fun testContentTypeFromExtension() {
+        assertEquals("text/csv; charset=utf-8", LocalS3ProjectSeeder.contentType(Path.of("data/users.CSV")))
+        assertEquals("application/json", LocalS3ProjectSeeder.contentType(Path.of("config.json")))
+        assertEquals("application/vnd.apache.parquet", LocalS3ProjectSeeder.contentType(Path.of("t.parquet")))
+        assertEquals("image/svg+xml", LocalS3ProjectSeeder.contentType(Path.of("logo.svg")))
+        assertEquals("application/octet-stream", LocalS3ProjectSeeder.contentType(Path.of("no-extension")))
+    }
+
     private fun exists(bucket: String, key: String): Boolean = try {
         manager.objectService().headObject(bucket, key, GetObjectOptions.builder().build())
         true

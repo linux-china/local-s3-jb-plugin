@@ -11,6 +11,7 @@ import com.robothy.s3.rest.service.BucketNameValidator
 import java.nio.file.Files
 import java.nio.file.LinkOption
 import java.nio.file.Path
+import kotlin.io.path.extension
 import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.name
 
@@ -111,7 +112,7 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
         Files.newInputStream(file).use { content ->
             objectService.putObject(
                 bucket, key, PutObjectOptions.builder()
-                    .contentType(Files.probeContentType(file) ?: "application/octet-stream")
+                    .contentType(contentType(file))
                     .size(Files.size(file))
                     .content(content)
                     .build()
@@ -145,6 +146,62 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
          * The maximum number of files imported from a directory, so that a wrong path doesn't import a whole tree.
          */
         const val MAX_FILES_PER_DIRECTORY = 256
+
+        private const val DEFAULT_CONTENT_TYPE = "application/octet-stream"
+
+        /**
+         * Content types of common extensions, looked up before [Files.probeContentType], which often returns `null` on
+         * macOS and Linux, e.g. for `.csv` or `.json`, and whose results differ between platforms.
+         */
+        private val CONTENT_TYPES = mapOf(
+            "html" to "text/html; charset=utf-8",
+            "htm" to "text/html; charset=utf-8",
+            "css" to "text/css; charset=utf-8",
+            "js" to "text/javascript; charset=utf-8",
+            "mjs" to "text/javascript; charset=utf-8",
+            "json" to "application/json",
+            "map" to "application/json",
+            "xml" to "application/xml",
+            "txt" to "text/plain; charset=utf-8",
+            "md" to "text/markdown; charset=utf-8",
+            "csv" to "text/csv; charset=utf-8",
+            "tsv" to "text/tab-separated-values; charset=utf-8",
+            "yaml" to "application/yaml",
+            "yml" to "application/yaml",
+            "ndjson" to "application/x-ndjson",
+            "jsonl" to "application/x-ndjson",
+            "parquet" to "application/vnd.apache.parquet",
+            "avro" to "application/avro",
+            "pdf" to "application/pdf",
+            "zip" to "application/zip",
+            "gz" to "application/gzip",
+            "wasm" to "application/wasm",
+            "png" to "image/png",
+            "jpg" to "image/jpeg",
+            "jpeg" to "image/jpeg",
+            "gif" to "image/gif",
+            "webp" to "image/webp",
+            "avif" to "image/avif",
+            "svg" to "image/svg+xml",
+            "ico" to "image/x-icon",
+            "woff" to "font/woff",
+            "woff2" to "font/woff2",
+            "ttf" to "font/ttf",
+            "otf" to "font/otf",
+            "mp3" to "audio/mpeg",
+            "mp4" to "video/mp4",
+            "webm" to "video/webm",
+            "xls" to "application/vnd.ms-excel",
+            "xlsx" to "application/vnd.ms-excel",
+        )
+
+        /**
+         * The content type of a seed file, from its extension, else as probed by the platform.
+         */
+        internal fun contentType(file: Path): String =
+            CONTENT_TYPES[file.extension.lowercase()]
+                ?: runCatching { Files.probeContentType(file) }.getOrNull()
+                ?: DEFAULT_CONTENT_TYPE
 
         /**
          * The files under [directory], recursively and in a stable order, without hidden files such as `.DS_Store`,
