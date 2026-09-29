@@ -53,7 +53,7 @@ internal object LocalS3Connection {
         get() = accessKeyId.isEmpty() || secretAccessKey.isEmpty()
 
     private fun S3ConnectionData.matches(settings: LocalS3Settings): Boolean {
-        if (!useCustomEndpoint || customEndpoint != settings.endpoint || trustAllSsl != settings.tlsEnabled) {
+        if (!useCustomEndpoint || customEndpoint != settings.httpEndpoint) {
             return false
         }
         if (settings.isAnonymous) {
