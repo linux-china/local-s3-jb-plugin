@@ -6,6 +6,7 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.jetbrains.jsonSchema.impl.inspections.JsonSchemaComplianceInspection
 
 class LocalS3ProjectConfigEditingTest : BasePlatformTestCase() {
     fun testReportsInvalidBucketNames() {
@@ -23,6 +24,26 @@ class LocalS3ProjectConfigEditingTest : BasePlatformTestCase() {
         )
         val errors = myFixture.doHighlighting(HighlightSeverity.ERROR).map { it.text }
         assertSameElements(errors, "\"Bad_Bucket\"", "\"ab\"")
+    }
+
+    fun testSchemaReportsInvalidBucketNames() {
+        myFixture.enableInspections(JsonSchemaComplianceInspection::class.java)
+        myFixture.configureByText(
+            ".locals3.json",
+            """
+            {
+              "buckets": ["demo-bucket", " padded-bucket ", "Bad_Bucket", ""],
+              "seed": {
+                "ab": { "logo.png": "logo.png" },
+                "seed-bucket": { "logo.png": "logo.png" }
+              }
+            }
+            """.trimIndent(),
+        )
+        val problems = myFixture.doHighlighting(HighlightSeverity.WARNING)
+            .filter { it.inspectionToolId == "JsonSchemaCompliance" }
+            .map { it.text }
+        assertSameElements(problems, "\"Bad_Bucket\"", "\"ab\"")
     }
 
     fun testIgnoresOtherJsonFiles() {
