@@ -200,8 +200,9 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
                 "PS" -> 29095
                 "RM" -> 29096
                 "RR" -> 29097
-                "WS" -> 29098
-                else -> 29099
+                "RD" -> 29098
+                "WS" -> 29099
+                else -> 29100
             }
         }
     }
