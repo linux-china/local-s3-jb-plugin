@@ -188,8 +188,20 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
         // A stopped server stays stopped, e.g. after the user stopped it or with auto start disabled: the new settings
         // are used on its next start. A failed one is retried with the new settings.
         val localS3Service = service<LocalS3Service>()
-        if (settings.serverConfig() != previousServerConfig && localS3Service.status() != LocalS3Status.STOPPED) {
-            localS3Service.restartInBackground()
+        val serverConfig = settings.serverConfig()
+        if (serverConfig != previousServerConfig && localS3Service.status() != LocalS3Status.STOPPED) {
+            if (localS3Service.status() == LocalS3Status.RUNNING &&
+                serverConfig.copy(bucketNames = previousServerConfig.bucketNames) == previousServerConfig
+            ) {
+                // Only the default buckets changed: create the added ones in place, removed ones are kept like on a
+                // restart, which never deletes buckets.
+                val addedBuckets = serverConfig.bucketNames - previousServerConfig.bucketNames.toSet()
+                if (addedBuckets.isNotEmpty()) {
+                    localS3Service.createBucketsInBackground(addedBuckets)
+                }
+            } else {
+                localS3Service.restartInBackground()
+            }
         }
         updateConnectionInfo()
     }

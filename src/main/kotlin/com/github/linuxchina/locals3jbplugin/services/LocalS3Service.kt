@@ -16,6 +16,7 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.robothy.s3.core.exception.BucketNotExistException
 import com.robothy.s3.core.service.manager.LocalS3Manager
 import com.robothy.s3.rest.LocalS3
 import com.robothy.s3.rest.bootstrap.LocalS3Mode
@@ -216,6 +217,31 @@ class LocalS3Service : Disposable {
                 restart(project)
             }
         }.queue()
+    }
+
+    /**
+     * Creates the missing [buckets] off the EDT, e.g. after only the default buckets are changed in the settings. The
+     * Local S3 started by this IDE creates them in place, without a restart; otherwise, e.g. a failed one, it is
+     * restarted so that they are created on start.
+     */
+    fun createBucketsInBackground(buckets: List<String>, project: Project? = null) {
+        object : Task.Backgroundable(project, LocalS3Bundle["progress.createBuckets.title"], false) {
+            override fun run(indicator: ProgressIndicator) {
+                withLocalManager { createMissingBuckets(it, buckets) } ?: restart(project)
+            }
+        }.queue()
+    }
+
+    private fun createMissingBuckets(manager: LocalS3Manager, buckets: List<String>) {
+        val bucketService = manager.bucketService()
+        for (bucket in buckets) {
+            try {
+                bucketService.getBucket(bucket)
+            } catch (_: BucketNotExistException) {
+                runCatching { bucketService.createBucket(bucket) }
+                    .onFailure { thisLogger().warn("Failed to create bucket $bucket", it) }
+            }
+        }
     }
 
     /**
