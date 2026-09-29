@@ -12,6 +12,8 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.text.HtmlChunk
 import java.nio.file.Path
@@ -47,7 +49,8 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
     }
 
     /**
-     * Applies the configuration of the project, if it has one, to the Local S3 started by this IDE, if any.
+     * Applies the configuration of the project, if it has one, to the Local S3 started by this IDE, if any, in a
+     * background task.
      */
     fun apply() {
         if (project.isDisposed) {
@@ -55,7 +58,13 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
         }
         val projectDirectory = project.basePath?.let(Path::of) ?: return
         val config = loadOrNotify(projectDirectory) { LocalS3ProjectConfig.load(projectDirectory) } ?: return
-        val result = seed(config, projectDirectory)
+        runInBackground(LocalS3Bundle["progress.applyProjectConfig.title"]) { indicator ->
+            apply(config, projectDirectory, indicator)
+        }
+    }
+
+    private fun apply(config: LocalS3ProjectConfig, projectDirectory: Path, indicator: ProgressIndicator) {
+        val result = seed(config, projectDirectory, indicator)
         if (result == null) {
             thisLogger().info("Local S3 isn't started by this IDE, skipping ${LocalS3ProjectConfig.FILE_NAME} of ${project.name}")
             notifySkippedIfShared()
@@ -67,15 +76,20 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
     }
 
     /**
-     * Applies the configuration in [configText] on demand, resolving its local paths against [baseDirectory], and
-     * always reports the outcome, even when there was nothing to change.
+     * Applies the configuration in [configText] on demand in a background task, resolving its local paths against
+     * [baseDirectory], and always reports the outcome, even when there was nothing to change.
      */
     fun sync(configText: String, baseDirectory: Path) {
-        if (project.isDisposed) {
-            return
+        runInBackground(LocalS3Bundle["progress.syncProjectConfig.title"]) { indicator ->
+            if (!project.isDisposed) {
+                sync(configText, baseDirectory, indicator)
+            }
         }
+    }
+
+    private fun sync(configText: String, baseDirectory: Path, indicator: ProgressIndicator) {
         val config = loadOrNotify(baseDirectory) { LocalS3ProjectConfig.parse(configText) } ?: return
-        val result = seed(config, baseDirectory)
+        val result = seed(config, baseDirectory, indicator)
         if (result == null) {
             notify(
                 NotificationType.WARNING,
@@ -101,12 +115,30 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
         }
 
     /**
+     * Seeds without holding the lock of the service: stopping Local S3 cancels [indicator] instead of waiting for the
+     * whole import.
+     *
      * @return the result, or `null` if Local S3 isn't started by this IDE.
      */
-    private fun seed(config: LocalS3ProjectConfig, baseDirectory: Path): LocalS3ProjectSeeder.Result? =
-        service<LocalS3Service>().withLocalManager { manager ->
-            LocalS3ProjectSeeder(manager, baseDirectory).apply(config)
+    private fun seed(
+        config: LocalS3ProjectConfig,
+        baseDirectory: Path,
+        indicator: ProgressIndicator,
+    ): LocalS3ProjectSeeder.Result? =
+        service<LocalS3Service>().withLocalManager(indicator) { manager ->
+            LocalS3ProjectSeeder(manager, baseDirectory).apply(config, indicator)
         }
+
+    /**
+     * Runs [block] in a cancelable background task, which shows the progress of the import.
+     */
+    private fun runInBackground(title: String, block: (ProgressIndicator) -> Unit) {
+        object : Task.Backgroundable(project, title, true) {
+            override fun run(indicator: ProgressIndicator) {
+                block(indicator)
+            }
+        }.queue()
+    }
 
     /**
      * Tells once, until the configuration is applied again, that it isn't applied to a shared Local S3, so that missing

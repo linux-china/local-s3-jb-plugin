@@ -1,5 +1,6 @@
 package com.github.linuxchina.locals3jbplugin.project
 
+import com.intellij.openapi.progress.ProgressIndicator
 import com.robothy.s3.core.exception.BucketNotExistException
 import com.robothy.s3.core.exception.ObjectNotExistException
 import com.robothy.s3.core.exception.VersionedObjectNotExistException
@@ -39,47 +40,62 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
             get() = createdBuckets.isNotEmpty() || importedObjects > 0
     }
 
-    fun apply(config: LocalS3ProjectConfig): Result {
+    /**
+     * @param indicator shows the progress, and cancels the import between objects, e.g. when Local S3 is stopped.
+     */
+    fun apply(config: LocalS3ProjectConfig, indicator: ProgressIndicator? = null): Result {
         val createdBuckets = mutableListOf<String>()
         val truncatedDirectories = mutableListOf<Path>()
         val errors = mutableListOf<String>()
         var importedObjects = 0
 
         val availableBuckets = config.allBuckets.filter { bucket ->
+            // Outside runCatching, which would swallow the cancellation.
+            indicator?.checkCanceled()
             runCatching { if (createBucketIfAbsent(bucket)) createdBuckets += bucket }
                 .onFailure { errors += "Failed to create bucket $bucket: ${it.message ?: it.javaClass.simpleName}" }
                 .isSuccess
         }.toSet()
 
+        // Listed first, so that the progress has a total.
+        val imports = mutableListOf<Import>()
         for ((bucket, objects) in config.seed) {
             if (bucket !in availableBuckets) {
                 continue
             }
             for ((objectPath, localPath) in objects) {
+                indicator?.checkCanceled()
                 val source = resolve(localPath)
-                val files = when {
-                    Files.isRegularFile(source) -> listOf(source to fileKey(objectPath, source))
+                when {
+                    Files.isRegularFile(source) -> imports += Import(bucket, fileKey(objectPath, source), source)
                     Files.isDirectory(source) -> {
                         val found = listFiles(source)
                         if (found.size > MAX_FILES_PER_DIRECTORY) {
                             truncatedDirectories.add(source)
                         }
-                        found.take(MAX_FILES_PER_DIRECTORY).map { it to directoryKey(objectPath, source, it) }
+                        found.take(MAX_FILES_PER_DIRECTORY)
+                            .mapTo(imports) { Import(bucket, directoryKey(objectPath, source, it), it) }
                     }
 
-                    else -> {
-                        errors.add("Seed path $localPath of $bucket/$objectPath doesn't exist")
-                        emptyList()
-                    }
-                }
-                for ((file, key) in files) {
-                    runCatching { if (putObjectIfChanged(bucket, key, file)) importedObjects++ }
-                        .onFailure { errors += "Failed to import $file to $bucket/$key: ${it.message ?: it.javaClass.simpleName}" }
+                    else -> errors.add("Seed path $localPath of $bucket/$objectPath doesn't exist")
                 }
             }
         }
+
+        indicator?.isIndeterminate = imports.isEmpty()
+        for ((index, import) in imports.withIndex()) {
+            indicator?.checkCanceled()
+            indicator?.text2 = "${import.bucket}/${import.key}"
+            indicator?.fraction = index.toDouble() / imports.size
+            runCatching { if (putObjectIfChanged(import.bucket, import.key, import.file)) importedObjects++ }
+                .onFailure {
+                    errors += "Failed to import ${import.file} to ${import.bucket}/${import.key}: ${it.message ?: it.javaClass.simpleName}"
+                }
+        }
         return Result(createdBuckets, importedObjects, truncatedDirectories, errors)
     }
+
+    private data class Import(val bucket: String, val key: String, val file: Path)
 
     /**
      * @return `true` if the bucket was created, `false` if it already existed.

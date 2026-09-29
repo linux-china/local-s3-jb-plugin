@@ -277,9 +277,8 @@ class SyncLocalS3ProjectConfigAction : LocalS3Action() {
         val file = configFile(e) ?: return
         val baseDirectory = file.parent?.toNioPathOrNull() ?: return
         val text = e.getData(CommonDataKeys.EDITOR)?.document?.text ?: return
-        runInBackground(project, "progress.syncProjectConfig.title") {
-            project.service<LocalS3ProjectSetup>().sync(text, baseDirectory)
-        }
+        // Runs in its own cancelable background task, which shows the progress of the import.
+        project.service<LocalS3ProjectSetup>().sync(text, baseDirectory)
     }
 
     private fun configFile(e: AnActionEvent): VirtualFile? =

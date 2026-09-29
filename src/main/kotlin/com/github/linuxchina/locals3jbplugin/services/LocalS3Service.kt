@@ -24,8 +24,12 @@ import java.net.BindException
 import java.net.HttpURLConnection
 import java.net.Proxy
 import java.net.URI
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.write
 
 @Service(Service.Level.APP)
 class LocalS3Service : Disposable {
@@ -48,6 +52,23 @@ class LocalS3Service : Disposable {
     private var healthCheck: ScheduledFuture<*>? = null
 
     /**
+     * Whether a [checkHealth] is running, so that a slow one isn't overlapped by the next.
+     */
+    private val healthChecking = AtomicBoolean()
+
+    /**
+     * Held for reading while [withLocalManager] runs, and for writing while our Local S3 is closed, so that it isn't
+     * closed under an action without holding the service lock for the whole action, e.g. a long seed import.
+     */
+    private val managerLock = ReentrantReadWriteLock()
+
+    /**
+     * The indicators of the running [withLocalManager] actions, canceled when our Local S3 is closed so that closing
+     * doesn't wait for them to complete.
+     */
+    private val managerUsers: MutableSet<ProgressIndicator> = ConcurrentHashMap.newKeySet()
+
+    /**
      * Set when the user stops Local S3, so that opening another project doesn't start it again in this IDE session.
      */
     @Volatile
@@ -64,16 +85,28 @@ class LocalS3Service : Disposable {
     fun isShared(): Boolean = sharedEndpoint != null
 
     /**
-     * Runs [action] with the manager of the Local S3 started by this IDE, under the service lock so that it isn't
-     * stopped meanwhile.
+     * Runs [action] with the manager of the Local S3 started by this IDE, which isn't closed meanwhile. It doesn't hold
+     * the service lock, so that starting, stopping and the health check don't wait for [action].
      *
+     * @param indicator canceled when Local S3 is closed, which waits for [action] to return: a long action should check
+     * it regularly.
      * @return the result of [action], or `null` if this IDE didn't start Local S3, e.g. it is stopped or shared with
      * another process, whose data can only be reached through the S3 API.
      */
-    @Synchronized
-    fun <T> withLocalManager(action: (LocalS3Manager) -> T): T? {
-        val server = localS3?.takeIf { it.isRunning } ?: return null
-        return action(server.s3Manager)
+    fun <T> withLocalManager(indicator: ProgressIndicator? = null, action: (LocalS3Manager) -> T): T? {
+        val manager = synchronized(this) {
+            val server = localS3?.takeIf { it.isRunning } ?: return null
+            // Registered under the service lock, so that closing can't miss it.
+            managerLock.readLock().lock()
+            indicator?.let(managerUsers::add)
+            server.s3Manager
+        }
+        try {
+            return action(manager)
+        } finally {
+            indicator?.let(managerUsers::remove)
+            managerLock.readLock().unlock()
+        }
     }
 
     /**
@@ -98,23 +131,59 @@ class LocalS3Service : Disposable {
      *
      * @return `true` if Local S3 is available afterward, either started here or shared with another process.
      */
-    @Synchronized
     fun start(project: Project? = null): Boolean {
+        val settings = LocalS3Settings.getInstance()
+        val race = synchronized(this) {
+            when (val result = tryStart(settings, project)) {
+                StartResult.Available -> return true
+                StartResult.Failed -> return false
+                is StartResult.Race -> result
+            }
+        }
+        // Another IDE may have bound the port or locked the data directory between the probe and our start. It locks
+        // the data directory before binding the port, so give it some time to start listening, without the service
+        // lock so that other callers, e.g. a stop, don't wait meanwhile.
+        val listening = awaitListening(settings)
+        synchronized(this) {
+            when {
+                isRunning() || isShared() -> return true
+                // Stopped by the user meanwhile: don't reuse the other Local S3 behind their back.
+                stoppedByUser -> return false
+                listening && reuseRunningLocalS3(settings, project) -> return true
+            }
+            reportStartFailure(settings, race.error, project)
+            return false
+        }
+    }
+
+    private sealed interface StartResult {
+        data object Available : StartResult
+        data object Failed : StartResult
+
+        /**
+         * Failed to start because another process bound the port or locked the data directory meanwhile.
+         */
+        class Race(val error: Exception) : StartResult
+    }
+
+    /**
+     * Starts Local S3 or reuses the one already listening, under the service lock.
+     */
+    private fun tryStart(settings: LocalS3Settings, project: Project?): StartResult {
         stoppedByUser = false
         if (isRunning()) {
-            return true
+            return StartResult.Available
         }
-        val settings = LocalS3Settings.getInstance()
         val takingOver = sharedEndpoint?.let {
             if (isLocalS3Listening(settings)) {
-                return true
+                return StartResult.Available
             }
             thisLogger().info("Shared Local S3 at $it has stopped, starting our own")
             sharedEndpoint = null
             true
         } ?: false
         if (reuseRunningLocalS3(settings, project)) {
-            return true
+            return StartResult.Available
         }
         try {
             val server = buildLocalS3(settings).also(LocalS3::start)
@@ -123,25 +192,30 @@ class LocalS3Service : Disposable {
             if (takingOver) {
                 notifyTakeOver(settings, server, project)
             }
-            return true
+            return StartResult.Available
         } catch (e: Exception) {
             closeQuietly()
-            // Another IDE may have bound the port or locked the data directory between the probe and our start. It
-            // locks the data directory before binding the port, so give it some time to start listening.
-            if (awaitRunningLocalS3(settings, project, e.isRaceWithOtherProcess())) {
-                return true
+            if (e.isRaceWithOtherProcess()) {
+                return StartResult.Race(e)
             }
-            thisLogger().warn("Failed to start Local S3 at ${settings.endpoint}", e)
-            updateStatus(LocalS3Status.FAILED)
-            notifyStartFailure(settings, e, project)
-            return false
+            if (reuseRunningLocalS3(settings, project)) {
+                return StartResult.Available
+            }
+            reportStartFailure(settings, e, project)
+            return StartResult.Failed
         }
     }
 
+    private fun reportStartFailure(settings: LocalS3Settings, error: Exception, project: Project?) {
+        thisLogger().warn("Failed to start Local S3 at ${settings.endpoint}", error)
+        updateStatus(LocalS3Status.FAILED)
+        notifyStartFailure(settings, error, project)
+    }
+
     /**
-     * Starts our own Local S3 if the shared one has stopped, so that the service doesn't silently disappear.
+     * Starts our own Local S3 if the shared one has stopped, so that the service doesn't silently disappear. [start]
+     * checks again under the service lock whether it is still shared.
      */
-    @Synchronized
     fun takeOverIfSharedServerGone(project: Project? = null) {
         if (isShared()) {
             start(project)
@@ -188,10 +262,13 @@ class LocalS3Service : Disposable {
         }
     }
 
+    /**
+     * The shared scheduler only triggers [checkHealth], which probes the port and may start Netty, on a pooled thread.
+     */
     private fun scheduleHealthCheck(available: Boolean) {
         if (available && healthCheck == null) {
             healthCheck = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay(
-                { runCatching(::checkHealth).onFailure { thisLogger().warn("Local S3 health check failed", it) } },
+                ::triggerHealthCheck,
                 HEALTH_CHECK_INTERVAL_SECONDS,
                 HEALTH_CHECK_INTERVAL_SECONDS,
                 TimeUnit.SECONDS,
@@ -202,7 +279,23 @@ class LocalS3Service : Disposable {
         }
     }
 
-    @Synchronized
+    private fun triggerHealthCheck() {
+        if (!healthChecking.compareAndSet(false, true)) {
+            return
+        }
+        AppExecutorUtil.getAppExecutorService().execute {
+            try {
+                runCatching(::checkHealth).onFailure { thisLogger().warn("Local S3 health check failed", it) }
+            } finally {
+                healthChecking.set(false)
+            }
+        }
+    }
+
+    /**
+     * Not under the service lock as a whole, so that [start] can wait for a concurrent start by another process
+     * without it; a concurrent start is fine either way, since starting is a no-op while Local S3 is available.
+     */
     fun restart(project: Project? = null): Boolean {
         stop()
         return start(project)
@@ -270,9 +363,20 @@ class LocalS3Service : Disposable {
         sharedEndpoint = null
         localS3?.let {
             if (it.isRunning) {
-                it.close()
+                closeServer(it)
             }
             localS3 = null
+        }
+    }
+
+    /**
+     * Closes [server] once the [withLocalManager] actions using it have returned, canceling them first so that it
+     * doesn't wait for a whole seed import. Called under the service lock, so that no new action starts meanwhile.
+     */
+    private fun closeServer(server: LocalS3) {
+        managerUsers.forEach(ProgressIndicator::cancel)
+        managerLock.write {
+            server.close()
         }
     }
 
@@ -306,7 +410,7 @@ class LocalS3Service : Disposable {
 
     private fun closeQuietly() {
         try {
-            localS3?.close()
+            localS3?.let(::closeServer)
         } catch (e: Exception) {
             thisLogger().debug("Failed to close Local S3 after a failed start", e)
         }
@@ -314,15 +418,15 @@ class LocalS3Service : Disposable {
     }
 
     /**
-     * @param retry whether to probe several times, e.g. when another process is starting Local S3 concurrently.
+     * Waits for another process that is starting Local S3 concurrently to listen. Only probes, without changing the
+     * state, so that it can run without the service lock.
      */
-    private fun awaitRunningLocalS3(settings: LocalS3Settings, project: Project?, retry: Boolean): Boolean {
-        val attempts = if (retry) RACE_PROBE_ATTEMPTS else 1
-        repeat(attempts) { attempt ->
+    private fun awaitListening(settings: LocalS3Settings): Boolean {
+        repeat(RACE_PROBE_ATTEMPTS) { attempt ->
             if (attempt > 0) {
                 Thread.sleep(RACE_PROBE_DELAY_MILLIS)
             }
-            if (reuseRunningLocalS3(settings, project)) {
+            if (isLocalS3Listening(settings)) {
                 return true
             }
         }
