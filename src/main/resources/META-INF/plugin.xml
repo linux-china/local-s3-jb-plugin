@@ -48,5 +48,9 @@
                     icon="AllIcons.General.Settings"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </group>
+        <action id="LocalS3.SyncProjectConfig" class="com.github.linuxchina.locals3jbplugin.actions.SyncLocalS3ProjectConfigAction"
+                icon="AllIcons.Actions.Refresh">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>

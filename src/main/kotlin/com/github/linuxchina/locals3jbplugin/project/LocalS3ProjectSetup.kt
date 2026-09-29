@@ -47,28 +47,58 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
             return
         }
         val projectDirectory = project.basePath?.let(Path::of) ?: return
-        val config = try {
-            LocalS3ProjectConfig.load(projectDirectory) ?: return
+        val config = loadOrNotify(projectDirectory) { LocalS3ProjectConfig.load(projectDirectory) } ?: return
+        val result = seed(config, projectDirectory)
+        if (result == null) {
+            thisLogger().info("Local S3 isn't started by this IDE, skipping ${LocalS3ProjectConfig.FILE_NAME} of ${project.name}")
+            return
+        }
+        report(result, byUser = false)
+    }
+
+    /**
+     * Applies the configuration in [configText] on demand, resolving its local paths against [baseDirectory], and
+     * always reports the outcome, even when there was nothing to change.
+     */
+    fun sync(configText: String, baseDirectory: Path) {
+        if (project.isDisposed) {
+            return
+        }
+        val config = loadOrNotify(baseDirectory) { LocalS3ProjectConfig.parse(configText) } ?: return
+        val result = seed(config, baseDirectory)
+        if (result == null) {
+            notify(
+                NotificationType.WARNING,
+                LocalS3Bundle["notification.projectConfig.notRunning.title", LocalS3ProjectConfig.FILE_NAME],
+                LocalS3Bundle["notification.projectConfig.notRunning.content"],
+            )
+            return
+        }
+        report(result, byUser = true)
+    }
+
+    private fun loadOrNotify(directory: Path, load: () -> LocalS3ProjectConfig?): LocalS3ProjectConfig? =
+        try {
+            load()
         } catch (e: Exception) {
-            thisLogger().warn("Invalid ${LocalS3ProjectConfig.FILE_NAME} in $projectDirectory", e)
+            thisLogger().warn("Invalid ${LocalS3ProjectConfig.FILE_NAME} in $directory", e)
             notify(
                 NotificationType.WARNING,
                 LocalS3Bundle["notification.projectConfig.invalid.title", LocalS3ProjectConfig.FILE_NAME],
                 HtmlChunk.text(e.message ?: e.javaClass.simpleName).toString(),
             )
-            return
+            null
         }
-        val result = service<LocalS3Service>().withLocalManager { manager ->
-            LocalS3ProjectSeeder(manager, projectDirectory).apply(config)
-        }
-        if (result == null) {
-            thisLogger().info("Local S3 isn't started by this IDE, skipping ${LocalS3ProjectConfig.FILE_NAME} of ${project.name}")
-            return
-        }
-        report(result)
-    }
 
-    private fun report(result: LocalS3ProjectSeeder.Result) {
+    /**
+     * @return the result, or `null` if Local S3 isn't started by this IDE.
+     */
+    private fun seed(config: LocalS3ProjectConfig, baseDirectory: Path): LocalS3ProjectSeeder.Result? =
+        service<LocalS3Service>().withLocalManager { manager ->
+            LocalS3ProjectSeeder(manager, baseDirectory).apply(config)
+        }
+
+    private fun report(result: LocalS3ProjectSeeder.Result, byUser: Boolean) {
         if (result.hasChanges) {
             notify(
                 NotificationType.INFORMATION,
@@ -98,6 +128,12 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
                 HtmlChunk.fragment(*shown.flatMapIndexed { i, chunk ->
                     if (i == 0) listOf(chunk) else listOf(HtmlChunk.br(), chunk)
                 }.toTypedArray()).toString(),
+            )
+        } else if (byUser && !result.hasChanges) {
+            notify(
+                NotificationType.INFORMATION,
+                LocalS3Bundle["notification.projectConfig.upToDate.title"],
+                LocalS3Bundle["notification.projectConfig.upToDate.content", LocalS3ProjectConfig.FILE_NAME],
             )
         }
     }

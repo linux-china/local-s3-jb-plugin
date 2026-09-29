@@ -1,6 +1,8 @@
 package com.github.linuxchina.locals3jbplugin.actions
 
 import com.github.linuxchina.locals3jbplugin.LocalS3Bundle
+import com.github.linuxchina.locals3jbplugin.project.LocalS3ProjectConfig
+import com.github.linuxchina.locals3jbplugin.project.LocalS3ProjectSetup
 import com.github.linuxchina.locals3jbplugin.services.LocalS3Service
 import com.github.linuxchina.locals3jbplugin.services.LocalS3Status
 import com.github.linuxchina.locals3jbplugin.settings.LocalS3Configurable
@@ -8,6 +10,7 @@ import com.github.linuxchina.locals3jbplugin.settings.LocalS3Settings
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.components.service
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.options.ShowSettingsUtil
@@ -15,6 +18,8 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.toNioPathOrNull
 import java.awt.datatransfer.StringSelection
 
 abstract class LocalS3Action : DumbAwareAction() {
@@ -187,4 +192,30 @@ class OpenLocalS3SettingsAction : LocalS3Action() {
     override fun actionPerformed(e: AnActionEvent) {
         ShowSettingsUtil.getInstance().showSettingsDialog(e.project, LocalS3Configurable::class.java)
     }
+}
+
+/**
+ * Applies the `.locals3.json` open in the editor, including its unsaved changes, from the editor popup menu. Its local
+ * paths are resolved against its directory. Only shown for that file, and only enabled when Local S3 is started by
+ * this IDE: a shared one belongs to another process.
+ */
+class SyncLocalS3ProjectConfigAction : LocalS3Action() {
+    override fun update(e: AnActionEvent) {
+        val visible = e.project != null && configFile(e) != null
+        e.presentation.isVisible = visible
+        e.presentation.isEnabled = visible && service<LocalS3Service>().status() == LocalS3Status.RUNNING
+    }
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val project = e.project ?: return
+        val file = configFile(e) ?: return
+        val baseDirectory = file.parent?.toNioPathOrNull() ?: return
+        val text = e.getData(CommonDataKeys.EDITOR)?.document?.text ?: return
+        runInBackground(project, "progress.syncProjectConfig.title") {
+            project.service<LocalS3ProjectSetup>().sync(text, baseDirectory)
+        }
+    }
+
+    private fun configFile(e: AnActionEvent): VirtualFile? =
+        e.getData(CommonDataKeys.VIRTUAL_FILE)?.takeIf { it.name == LocalS3ProjectConfig.FILE_NAME && !it.isDirectory }
 }
