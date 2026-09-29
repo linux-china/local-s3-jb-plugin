@@ -50,6 +50,9 @@ class LocalS3Service : Disposable {
      * Starts Local S3, or reuses the one already listening on the configured port. Failures are reported with a
      * notification instead of being thrown, so they don't end up in the IDE error reporter.
      *
+     * Calling it again is a no-op while Local S3 is available: a shared one is only probed again, and replaced by our
+     * own if it has stopped, e.g. because the IDE that started it was closed.
+     *
      * @return `true` if Local S3 is available afterward, either started here or shared with another process.
      */
     @Synchronized
@@ -57,8 +60,14 @@ class LocalS3Service : Disposable {
         if (isRunning()) {
             return true
         }
-        sharedEndpoint = null
         val settings = LocalS3Settings.getInstance()
+        sharedEndpoint?.let {
+            if (isLocalS3Listening(settings)) {
+                return true
+            }
+            thisLogger().info("Shared Local S3 at $it has stopped, starting our own")
+            sharedEndpoint = null
+        }
         if (reuseRunningLocalS3(settings, project)) {
             return true
         }
@@ -74,6 +83,16 @@ class LocalS3Service : Disposable {
             thisLogger().warn("Failed to start Local S3 at ${settings.endpoint}", e)
             notifyStartFailure(settings, e, project)
             return false
+        }
+    }
+
+    /**
+     * Starts our own Local S3 if the shared one has stopped, so that the service doesn't silently disappear.
+     */
+    @Synchronized
+    fun takeOverIfSharedServerGone(project: Project? = null) {
+        if (isShared()) {
+            start(project)
         }
     }
 

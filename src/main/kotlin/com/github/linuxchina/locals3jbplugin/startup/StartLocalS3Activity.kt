@@ -8,7 +8,9 @@ import com.intellij.openapi.startup.ProjectActivity
 class StartLocalS3Activity : ProjectActivity {
     override suspend fun execute(project: Project) {
         val localS3Service = service<LocalS3Service>()
-        if (!localS3Service.isRunning() && !localS3Service.isShared()) {
+        if (localS3Service.isShared()) {
+            localS3Service.takeOverIfSharedServerGone(project)
+        } else {
             localS3Service.start(project)
         }
     }
