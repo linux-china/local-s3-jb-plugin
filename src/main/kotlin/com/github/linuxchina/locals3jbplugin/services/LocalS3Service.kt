@@ -19,6 +19,7 @@ import com.intellij.util.concurrency.AppExecutorUtil
 import com.robothy.s3.core.exception.DataPathLockedException
 import com.robothy.s3.core.service.manager.LocalS3Manager
 import com.robothy.s3.rest.LocalS3
+import com.robothy.s3.rest.LocalS3Cors
 import com.robothy.s3.rest.bootstrap.LocalS3Mode
 import java.net.BindException
 import java.net.HttpURLConnection
@@ -383,6 +384,7 @@ class LocalS3Service : Disposable {
             .mode(LocalS3Mode.PERSISTENCE)
             .dataPath(dataDirectory.toString())
             .buckets(*settings.bucketNames.toTypedArray())
+            .defaultCors(LocalS3Cors.allowOrigins("*"))
             .netty {
                 it.daemonThreads(true).registerShutdownHook(false)
             }
