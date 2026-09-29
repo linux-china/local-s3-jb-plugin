@@ -18,7 +18,7 @@ kotlin {
 dependencies {
     implementation("io.github.robothy:local-s3-rest:2.5.0-SNAPSHOT") {
         exclude(group = "org.slf4j", module = "slf4j-api")
-//        exclude(group = "io.netty", module = "netty-handler")
+        exclude(group = "org.jspecify", module = "jspecify")
 //        exclude(group = "io.netty", module = "netty-transport")
 //        exclude(group = "io.netty", module = "netty-codec-http")
     }
