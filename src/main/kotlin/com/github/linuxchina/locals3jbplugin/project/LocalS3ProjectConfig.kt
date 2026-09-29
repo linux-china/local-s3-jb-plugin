@@ -71,8 +71,9 @@ data class LocalS3ProjectConfig(
             }.orEmpty()
             val seed = config.get("seed").orNull()?.let { element ->
                 require(element.isJsonObject) { "\"seed\" must map bucket names to objects" }
-                element.asJsonObject.entrySet().associateTo(LinkedHashMap()) { (bucket, objects) ->
-                    bucket.trim() to parseSeedObjects(bucket, objects)
+                element.asJsonObject.entrySet().associateTo(LinkedHashMap()) { (name, objects) ->
+                    val bucket = name.trim()
+                    bucket to parseSeedObjects(bucket, objects)
                 }
             }.orEmpty()
             return LocalS3ProjectConfig(buckets.distinct(), seed)
