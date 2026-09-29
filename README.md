@@ -45,11 +45,14 @@ Commit a `.locals3.json` file to the project root to declare the buckets and see
   "buckets": ["demo-bucket", "demo2-bucket"],
   "seed": {
     "demo-bucket": {
-      "avatars": "src/test/resources/s3-seed/avatars"
+      "dataset": "src/test/dataset",
+      "family.csv": "family.csv"
     }
   }
 }
 ```
+
+**Attention**: `MAX_FILES_PER_DIRECTORY` is 256 
 
 When the project is opened, and each time Local S3 starts afterward, the buckets are created and the seed data imported:
 
