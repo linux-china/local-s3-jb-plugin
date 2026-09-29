@@ -8,6 +8,12 @@
 
 - Copy Connection As...: `.env`, DuckDB S3 secret, Spring Boot `application.properties` (Spring Cloud AWS) and AWS CLI profile
 - Project buckets and seed data declared in `.locals3.json` at the project root
+- Iceberg REST catalog settings: enable/disable and warehouse location
+- Copy Connection As...: PyIceberg `.pyiceberg.yaml`, Spark Iceberg catalog properties and DuckDB Iceberg `ATTACH`
+
+### Fixed
+
+- Iceberg REST catalog was not served, although it was advertised
 
 ## 0.1.0 - 2026-09-27
 

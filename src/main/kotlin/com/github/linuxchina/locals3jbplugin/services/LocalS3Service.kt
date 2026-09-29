@@ -295,6 +295,12 @@ class LocalS3Service : Disposable {
                 it.selfSigned().required(false)
             }
         }
+        if (settings.icebergEnabled) {
+            // Its warehouse bucket is created on start, and its tables are stored in the data path like any object.
+            builder.icebergCatalog {
+                it.warehouse(settings.icebergWarehouse)
+            }
+        }
         return builder.build()
     }
 

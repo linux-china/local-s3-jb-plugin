@@ -7,7 +7,10 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.io.delete
 import com.robothy.s3.rest.LocalS3
 import com.robothy.s3.rest.bootstrap.LocalS3Mode
+import java.net.HttpURLConnection
+import java.net.Proxy
 import java.net.ServerSocket
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -36,6 +39,35 @@ class LocalS3ServiceTest : BasePlatformTestCase() {
             dataDirectory.delete()
         } finally {
             super.tearDown()
+        }
+    }
+
+    fun testServesIcebergCatalogAndCreatesItsWarehouseBucket() {
+        val settings = LocalS3Settings.getInstance().apply { icebergWarehouse = "s3://lakehouse/" }
+        val localS3Service = service<LocalS3Service>()
+
+        assertTrue(localS3Service.start())
+
+        assertEquals(HttpURLConnection.HTTP_OK, responseCode("${settings.icebergCatalogUri}/v1/config"))
+        assertEquals(true, localS3Service.withLocalManager { manager ->
+            runCatching { manager.bucketService().getBucket("lakehouse") }.isSuccess
+        })
+    }
+
+    fun testDoesNotServeIcebergCatalogWhenDisabled() {
+        val settings = LocalS3Settings.getInstance().apply { icebergEnabled = false }
+
+        assertTrue(service<LocalS3Service>().start())
+
+        assertFalse(responseCode("${settings.icebergCatalogUri}/v1/config") == HttpURLConnection.HTTP_OK)
+    }
+
+    private fun responseCode(url: String): Int {
+        val connection = URI(url).toURL().openConnection(Proxy.NO_PROXY) as HttpURLConnection
+        return try {
+            connection.responseCode
+        } finally {
+            connection.disconnect()
         }
     }
 

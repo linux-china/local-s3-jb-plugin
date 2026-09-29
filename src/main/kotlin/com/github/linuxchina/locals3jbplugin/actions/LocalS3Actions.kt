@@ -187,6 +187,73 @@ class CopyLocalS3AwsCliProfileAction : CopyLocalS3ConnectionAction() {
     }
 }
 
+/**
+ * Copies the settings of a client of the Iceberg REST catalog. The catalog vends the S3 endpoint and credentials, so
+ * its URI is all the clients need. Only enabled when the catalog is.
+ */
+abstract class CopyLocalS3IcebergConnectionAction : CopyLocalS3ConnectionAction() {
+    override fun update(e: AnActionEvent) {
+        e.presentation.isEnabled = LocalS3Settings.getInstance().icebergEnabled
+    }
+
+    companion object {
+        const val CATALOG_NAME = "locals3"
+    }
+}
+
+/**
+ * Copies a PyIceberg catalog for `.pyiceberg.yaml`, used with `load_catalog("locals3")`.
+ */
+class CopyLocalS3PyIcebergConfigAction : CopyLocalS3IcebergConnectionAction() {
+    override fun connection(settings: LocalS3Settings) = pyIcebergConfig(settings)
+
+    companion object {
+        fun pyIcebergConfig(settings: LocalS3Settings): String = buildString {
+            appendLine("catalog:")
+            appendLine("  $CATALOG_NAME:")
+            appendLine("    type: rest")
+            appendLine("    uri: ${settings.icebergCatalogUri}")
+        }
+    }
+}
+
+/**
+ * Copies the Spark properties of an Iceberg catalog, for `spark-defaults.conf` or `--conf`.
+ */
+class CopyLocalS3SparkIcebergPropertiesAction : CopyLocalS3IcebergConnectionAction() {
+    override fun connection(settings: LocalS3Settings) = sparkProperties(settings)
+
+    companion object {
+        fun sparkProperties(settings: LocalS3Settings): String = buildString {
+            appendLine("spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
+            appendLine("spark.sql.catalog.$CATALOG_NAME=org.apache.iceberg.spark.SparkCatalog")
+            appendLine("spark.sql.catalog.$CATALOG_NAME.type=rest")
+            appendLine("spark.sql.catalog.$CATALOG_NAME.uri=${settings.icebergCatalogUri}")
+        }
+    }
+}
+
+/**
+ * Copies the DuckDB statements that attach the Iceberg catalog, by the name of its warehouse: DuckDB attaches a name
+ * that is an `s3://` URI read-only.
+ */
+class CopyLocalS3DuckDbIcebergAttachAction : CopyLocalS3IcebergConnectionAction() {
+    override fun connection(settings: LocalS3Settings) = duckDbAttach(settings)
+
+    companion object {
+        fun duckDbAttach(settings: LocalS3Settings): String = buildString {
+            val warehouse = settings.icebergWarehouse.replaceFirst(Regex("^s3a?://"), "").trimEnd('/')
+            appendLine("INSTALL iceberg;")
+            appendLine("LOAD iceberg;")
+            appendLine("ATTACH '${warehouse.replace("'", "''")}' AS $CATALOG_NAME (")
+            appendLine("    TYPE iceberg,")
+            appendLine("    ENDPOINT '${settings.icebergCatalogUri}',")
+            appendLine("    AUTHORIZATION_TYPE 'none'")
+            appendLine(");")
+        }
+    }
+}
+
 class OpenLocalS3SettingsAction : LocalS3Action() {
     override fun actionPerformed(e: AnActionEvent) {
         ShowSettingsUtil.getInstance().showSettingsDialog(e.project, LocalS3Configurable::class.java)

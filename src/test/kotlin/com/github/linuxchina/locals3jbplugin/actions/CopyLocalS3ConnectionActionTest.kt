@@ -81,6 +81,48 @@ class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
         )
     }
 
+    fun testPyIcebergConfig() {
+        assertEquals(
+            """
+            catalog:
+              locals3:
+                type: rest
+                uri: http://127.0.0.1:29090/iceberg
+            
+            """.trimIndent(),
+            CopyLocalS3PyIcebergConfigAction.pyIcebergConfig(settings().apply { tlsEnabled = true })
+        )
+    }
+
+    fun testSparkIcebergProperties() {
+        assertEquals(
+            """
+            spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+            spark.sql.catalog.locals3=org.apache.iceberg.spark.SparkCatalog
+            spark.sql.catalog.locals3.type=rest
+            spark.sql.catalog.locals3.uri=http://127.0.0.1:29090/iceberg
+            
+            """.trimIndent(),
+            CopyLocalS3SparkIcebergPropertiesAction.sparkProperties(settings())
+        )
+    }
+
+    fun testDuckDbIcebergAttachNamesWarehouseWithoutScheme() {
+        assertEquals(
+            """
+            INSTALL iceberg;
+            LOAD iceberg;
+            ATTACH 'lakehouse' AS locals3 (
+                TYPE iceberg,
+                ENDPOINT 'http://127.0.0.1:29090/iceberg',
+                AUTHORIZATION_TYPE 'none'
+            );
+            
+            """.trimIndent(),
+            CopyLocalS3DuckDbIcebergAttachAction.duckDbAttach(settings().apply { icebergWarehouse = "s3://lakehouse/" })
+        )
+    }
+
     fun testOmitsCredentialsForAnonymousAccess() {
         val settings = anonymousSettings()
         assertFalse(CopyLocalS3DotEnvAction.dotEnv(settings).contains("AWS_ACCESS_KEY_ID"))

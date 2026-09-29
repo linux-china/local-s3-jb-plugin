@@ -14,6 +14,9 @@ class LocalS3SettingsTest : BasePlatformTestCase() {
         assertEquals("admin", settings.accessKeyId)
         assertEquals("admin", settings.secretAccessKey)
         assertEquals("http://127.0.0.1:29090", settings.endpoint)
+        assertTrue(settings.icebergEnabled)
+        assertEquals("s3://warehouse/", settings.icebergWarehouse)
+        assertEquals("http://127.0.0.1:29090/iceberg", settings.icebergCatalogUri)
         assertEquals(
             Path.of(System.getProperty("user.home"), ".locals3", "IU"),
             Path.of(settings.dataPath)

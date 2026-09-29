@@ -63,6 +63,24 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         }
 
     /**
+     * Whether the Iceberg REST catalog is served under [ICEBERG_PATH], on the port of the S3 API.
+     */
+    var icebergEnabled: Boolean
+        get() = settingsState.icebergEnabled
+        set(value) {
+            settingsState.icebergEnabled = value
+        }
+
+    /**
+     * The `s3://` location of the bucket that the tables of the Iceberg catalog are placed under, created on start.
+     */
+    var icebergWarehouse: String
+        get() = settingsState.icebergWarehouse
+        set(value) {
+            settingsState.icebergWarehouse = value.trim()
+        }
+
+    /**
      * The address the server binds to: `localhost` is resolved to the loopback address.
      */
     val bindHost: String
@@ -77,6 +95,12 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
     val httpEndpoint: String
         get() = endpointOf(host, port, false)
 
+    /**
+     * The URI that Iceberg clients are configured with, over plain HTTP, which the port always answers.
+     */
+    val icebergCatalogUri: String
+        get() = "$httpEndpoint$ICEBERG_PATH"
+
     val bucketNames: List<String>
         get() = buckets.split(',')
             .map(String::trim)
@@ -86,7 +110,9 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
     /**
      * The settings that the running server depends on: a change of any of them requires a restart.
      */
-    fun serverConfig() = ServerConfig(host, port, tlsEnabled, dataPath, accessKeyId, secretAccessKey, bucketNames)
+    fun serverConfig() = ServerConfig(
+        host, port, tlsEnabled, dataPath, accessKeyId, secretAccessKey, bucketNames, icebergEnabled, icebergWarehouse,
+    )
 
     fun ensureDataDirectory(): Path = Path.of(FileUtil.expandUserHome(dataPath))
         .toAbsolutePath()
@@ -108,6 +134,8 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         var secretAccessKey: String = DEFAULT_SECRET_ACCESS_KEY
         var buckets: String = DEFAULT_BUCKETS
         var dataPath: String = DEFAULT_DATA_PATH
+        var icebergEnabled: Boolean = true
+        var icebergWarehouse: String = DEFAULT_ICEBERG_WAREHOUSE
     }
 
     data class ServerConfig(
@@ -118,6 +146,8 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         val accessKeyId: String,
         val secretAccessKey: String,
         val bucketNames: List<String>,
+        val icebergEnabled: Boolean,
+        val icebergWarehouse: String,
     )
 
     companion object {
@@ -128,6 +158,10 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         const val DEFAULT_ACCESS_KEY_ID = "admin"
         const val DEFAULT_SECRET_ACCESS_KEY = "admin"
         const val DEFAULT_BUCKETS = "demo-bucket"
+        const val DEFAULT_ICEBERG_WAREHOUSE = "s3://warehouse/"
+
+        /** The path of the Iceberg REST catalog, which its clients append `/v1/...` to. */
+        const val ICEBERG_PATH = "/iceberg"
 
         /** Local S3 accepts any region; clients still need one to sign their requests. */
         const val REGION = "us-east-1"

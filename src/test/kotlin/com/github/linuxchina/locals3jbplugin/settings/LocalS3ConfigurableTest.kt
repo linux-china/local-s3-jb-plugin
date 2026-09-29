@@ -12,6 +12,15 @@ class LocalS3ConfigurableTest : TestCase() {
         }
     }
 
+    fun testAcceptsIcebergWarehouseOfValidBucketOnly() {
+        listOf("s3://warehouse/", "s3://warehouse", " s3://lake.house/tables/ ", "s3a://warehouse/").forEach {
+            assertTrue(it, LocalS3Configurable.isValidIcebergWarehouse(it))
+        }
+        listOf("", "warehouse", "s3:///", "s3://Ware_House/", "file:///tmp/warehouse").forEach {
+            assertFalse(it, LocalS3Configurable.isValidIcebergWarehouse(it))
+        }
+    }
+
     fun testReportsInvalidBucketNames() {
         assertEquals(emptyList<String>(), LocalS3Configurable.invalidBucketNames(" demo-bucket, my.bucket.1, abc, ,"))
         assertEquals(

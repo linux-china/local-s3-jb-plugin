@@ -42,6 +42,13 @@
                         class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3SpringBootPropertiesAction"/>
                 <action id="LocalS3.CopyAwsCliProfile"
                         class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3AwsCliProfileAction"/>
+                <separator/>
+                <action id="LocalS3.CopyPyIcebergConfig"
+                        class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3PyIcebergConfigAction"/>
+                <action id="LocalS3.CopySparkIcebergProperties"
+                        class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3SparkIcebergPropertiesAction"/>
+                <action id="LocalS3.CopyDuckDbIcebergAttach"
+                        class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3DuckDbIcebergAttachAction"/>
             </group>
             <separator/>
             <action id="LocalS3.OpenSettings" class="com.github.linuxchina.locals3jbplugin.actions.OpenLocalS3SettingsAction"

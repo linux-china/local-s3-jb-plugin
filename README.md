@@ -13,7 +13,7 @@ Features:
 - S3 compatible API: `http://127.0.0.1:29090`
 - Credential support
 - TLS support
-- Iceberg REST Catalog: `http://127.0.0.1:29090/iceberg`
+- Iceberg REST Catalog: `http://127.0.0.1:29090/iceberg`, warehouse `s3://warehouse/` (can be disabled in the settings)
 - Admin UI: `http://127.0.0.1:29090/_admin/ui`
 - Web Hosting: `http://127.0.0.1:29090`
 - Big Data Tools compatible

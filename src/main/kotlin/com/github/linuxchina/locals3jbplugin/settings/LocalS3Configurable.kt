@@ -24,7 +24,10 @@ import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.selected
 import com.robothy.s3.core.exception.InvalidBucketNameException
+import com.robothy.s3.core.iceberg.IcebergMetadataFiles
+import com.robothy.s3.rest.LocalS3IcebergCatalog
 import com.robothy.s3.rest.service.BucketNameValidator
 
 class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayName"]) {
@@ -34,6 +37,7 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
     private val statusLabel = JBLabel()
     private val endpointLabel = JBLabel().apply { setCopyable(true) }
     private val accessKeyIdLabel = JBLabel().apply { setCopyable(true) }
+    private val icebergCatalogLabel = JBLabel().apply { setCopyable(true) }
     private val testResultLabel = JBLabel()
 
     private lateinit var hostField: Cell<JBTextField>
@@ -59,6 +63,9 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
             }
             row(LocalS3Bundle["settings.connection.accessKeyId.label"]) {
                 cell(accessKeyIdLabel)
+            }
+            row(LocalS3Bundle["settings.connection.iceberg.label"]) {
+                cell(icebergCatalogLabel)
             }
             row {
                 link(LocalS3Bundle["settings.connection.openAdminUi"]) {
@@ -156,6 +163,26 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
                     }
             }
         }
+
+        group(LocalS3Bundle["settings.iceberg.group"]) {
+            lateinit var icebergCheckBox: Cell<JBCheckBox>
+            row {
+                icebergCheckBox = checkBox(LocalS3Bundle["settings.iceberg.enabled.label"])
+                    .bindSelected(settings::icebergEnabled)
+                    .comment(LocalS3Bundle["settings.iceberg.enabled.comment", LocalS3Settings.ICEBERG_PATH])
+            }
+            row(LocalS3Bundle["settings.iceberg.warehouse.label"]) {
+                textField()
+                    .bindText(settings::icebergWarehouse)
+                    .columns(32)
+                    .comment(LocalS3Bundle["settings.iceberg.warehouse.comment"])
+                    .validationOnApply {
+                        if (icebergCheckBox.component.isSelected && !isValidIcebergWarehouse(it.text)) {
+                            error(LocalS3Bundle["settings.iceberg.warehouse.invalid"])
+                        } else null
+                    }
+            }.enabledIf(icebergCheckBox.selected)
+        }
     }
 
     private fun subscribeToStatus() {
@@ -215,6 +242,11 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
         statusLabel.text = service<LocalS3Service>().status().displayName
         endpointLabel.text = settings.endpoint
         accessKeyIdLabel.text = settings.accessKeyId.ifEmpty { LocalS3Bundle["settings.connection.anonymous"] }
+        icebergCatalogLabel.text = if (settings.icebergEnabled) {
+            settings.icebergCatalogUri
+        } else {
+            LocalS3Bundle["settings.connection.iceberg.disabled"]
+        }
     }
 
     /**
@@ -264,6 +296,17 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
             .filter(String::isNotEmpty)
             .filterNot(::isValidBucketName)
             .distinct()
+
+        /**
+         * Accepts the `s3://` location of a bucket with a valid name, which Local S3 creates on start: an invalid one
+         * would make it fail to start.
+         */
+        internal fun isValidIcebergWarehouse(warehouse: String): Boolean = try {
+            val catalog = LocalS3IcebergCatalog.enabled().withWarehouse(warehouse.trim())
+            isValidBucketName(IcebergMetadataFiles.parse(catalog.warehouse()).bucket())
+        } catch (_: RuntimeException) {
+            false
+        }
 
         /**
          * Uses the same rules as Local S3, so that a name accepted here is never rejected by the server.
