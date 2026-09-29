@@ -11,6 +11,10 @@ plugins {
     id("org.jetbrains.changelog")
 }
 
+kotlin {
+    jvmToolchain(25)
+}
+
 dependencies {
     implementation("io.github.robothy:local-s3-rest:2.5.0-SNAPSHOT") {
         exclude(group = "org.slf4j", module = "slf4j-api")
