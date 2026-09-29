@@ -3,6 +3,8 @@ package com.github.linuxchina.locals3jbplugin.project
 import com.github.linuxchina.locals3jbplugin.LocalS3Bundle
 import com.github.linuxchina.locals3jbplugin.services.LocalS3Service
 import com.github.linuxchina.locals3jbplugin.services.LocalS3StateListener
+import com.github.linuxchina.locals3jbplugin.services.LocalS3Status
+import com.github.linuxchina.locals3jbplugin.settings.LocalS3Settings
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
@@ -19,11 +21,16 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Applies the [LocalS3ProjectConfig] of the project, i.e. creates its buckets and imports its seed data, when the
  * project is opened and each time Local S3 starts afterward.
  *
- * Only a Local S3 started by this IDE is set up: a shared one belongs to another process.
+ * Only a Local S3 started by this IDE is set up: a shared one belongs to another process, which is notified once.
  */
 @Service(Service.Level.PROJECT)
 class LocalS3ProjectSetup(private val project: Project) : Disposable {
     private val subscribed = AtomicBoolean()
+
+    /**
+     * Whether the user was told that the configuration isn't applied to the shared Local S3, see [notifySkippedIfShared].
+     */
+    private val sharedSkipNotified = AtomicBoolean()
 
     /**
      * Applies the configuration now, then each time Local S3 starts, e.g. after it was stopped or its settings changed.
@@ -51,8 +58,11 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
         val result = seed(config, projectDirectory)
         if (result == null) {
             thisLogger().info("Local S3 isn't started by this IDE, skipping ${LocalS3ProjectConfig.FILE_NAME} of ${project.name}")
+            notifySkippedIfShared()
             return
         }
+        // Applied to our own Local S3: tell again if it is shared with another process later on.
+        sharedSkipNotified.set(false)
         report(result, byUser = false)
     }
 
@@ -97,6 +107,25 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
         service<LocalS3Service>().withLocalManager { manager ->
             LocalS3ProjectSeeder(manager, baseDirectory).apply(config)
         }
+
+    /**
+     * Tells once, until the configuration is applied again, that it isn't applied to a shared Local S3, so that missing
+     * buckets don't come as a surprise. A stopped or failed Local S3 already has its own notifications.
+     */
+    private fun notifySkippedIfShared() {
+        if (service<LocalS3Service>().status() != LocalS3Status.SHARED || !sharedSkipNotified.compareAndSet(false, true)) {
+            return
+        }
+        notify(
+            NotificationType.WARNING,
+            LocalS3Bundle["notification.projectConfig.shared.title", LocalS3ProjectConfig.FILE_NAME],
+            LocalS3Bundle[
+                "notification.projectConfig.shared.content",
+                LocalS3Settings.getInstance().endpoint,
+                LocalS3ProjectConfig.FILE_NAME,
+            ],
+        )
+    }
 
     private fun report(result: LocalS3ProjectSeeder.Result, byUser: Boolean) {
         if (result.hasChanges) {

@@ -56,9 +56,9 @@ Commit a `.locals3.json` file to the project root to declare the buckets and see
 
 When the project is opened, and each time Local S3 starts afterward, the buckets are created and the seed data imported:
 
-- Only into the Local S3 started by this IDE, not into one shared with another IDE.
+- Only into the Local S3 started by this IDE, not into one shared with another IDE: a notification tells when they are skipped.
 - A file is imported as the object path, or under it if the object path ends with `/`.
-- The files of a directory, recursively and without hidden files, are imported under the object path, at most 200 per directory.
+- The files of a directory, recursively and without hidden files, are imported under the object path, at most 256 per directory.
 - Local paths are relative to the project root; absolute paths and `~/` are accepted.
 - Existing objects are overwritten with the content of their seed files, so that changes to the seed files are imported.
 

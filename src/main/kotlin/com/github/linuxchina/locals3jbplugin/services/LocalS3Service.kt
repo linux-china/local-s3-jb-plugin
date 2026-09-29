@@ -23,14 +23,8 @@ import java.net.BindException
 import java.net.HttpURLConnection
 import java.net.Proxy
 import java.net.URI
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
-import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
 
 @Service(Service.Level.APP)
 class LocalS3Service : Disposable {
@@ -391,15 +385,10 @@ class LocalS3Service : Disposable {
          */
         internal fun isLocalS3Listening(settings: LocalS3Settings): Boolean = isLocalS3Listening(settings.httpEndpoint)
 
-        fun isLocalS3Listening(endpoint: String): Boolean {
+        fun isLocalS3Listening(httpEndpoint: String): Boolean {
             return try {
-                val connection = URI("$endpoint$HEALTH_CHECK_PATH").toURL()
+                val connection = URI("$httpEndpoint$HEALTH_CHECK_PATH").toURL()
                     .openConnection(Proxy.NO_PROXY) as HttpURLConnection
-                if (connection is HttpsURLConnection) {
-                    // Local S3 uses a self-signed certificate.
-                    connection.sslSocketFactory = trustAllSslContext.socketFactory
-                    connection.setHostnameVerifier { _, _ -> true }
-                }
                 connection.connectTimeout = CONNECT_TIMEOUT_MILLIS
                 connection.readTimeout = READ_TIMEOUT_MILLIS
                 try {
@@ -414,14 +403,5 @@ class LocalS3Service : Disposable {
         }
 
         fun adminUiUrl(endpoint: String): String = "$endpoint$ADMIN_UI_PATH"
-
-        private val trustAllSslContext: SSLContext by lazy {
-            val trustAll = object : X509TrustManager {
-                override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = Unit
-                override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) = Unit
-                override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-            }
-            SSLContext.getInstance("TLS").apply { init(null, arrayOf<TrustManager>(trustAll), SecureRandom()) }
-        }
     }
 }
