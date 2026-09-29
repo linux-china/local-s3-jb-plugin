@@ -24,6 +24,8 @@ import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.panel
+import com.robothy.s3.core.exception.InvalidBucketNameException
+import com.robothy.s3.rest.service.BucketNameValidator
 
 class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayName"]) {
     private val settings = LocalS3Settings.getInstance()
@@ -234,7 +236,7 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
     }
 
     companion object {
-        private val BUCKET_NAME_REGEX = Regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
+        private val BUCKET_NAME_VALIDATOR = BucketNameValidator()
 
         /**
          * Accepts `localhost`, IPv4 and IPv6 addresses, the latter optionally in brackets, e.g. `[::]`.
@@ -248,7 +250,17 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
         internal fun invalidBucketNames(buckets: String): List<String> = buckets.split(',')
             .map(String::trim)
             .filter(String::isNotEmpty)
-            .filterNot { BUCKET_NAME_REGEX.matches(it) && ".." !in it && !InetAddresses.isInetAddress(it) }
+            .filterNot(::isValidBucketName)
             .distinct()
+
+        /**
+         * Uses the same rules as Local S3, so that a name accepted here is never rejected by the server.
+         */
+        private fun isValidBucketName(bucket: String): Boolean = try {
+            BUCKET_NAME_VALIDATOR.validate(bucket)
+            true
+        } catch (_: InvalidBucketNameException) {
+            false
+        }
     }
 }
