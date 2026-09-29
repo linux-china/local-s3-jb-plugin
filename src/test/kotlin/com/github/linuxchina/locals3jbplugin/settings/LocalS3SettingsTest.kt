@@ -32,6 +32,21 @@ class LocalS3SettingsTest : BasePlatformTestCase() {
         assertEquals(listOf("first", "second", "third"), settings.bucketNames)
     }
 
+    fun testMapsListenHostToClientHost() {
+        val settings = LocalS3Settings().apply { port = 29090 }
+
+        for (wildcard in listOf("0.0.0.0", "::", "[::]")) {
+            settings.host = wildcard
+            assertEquals("http://127.0.0.1:29090", settings.endpoint)
+        }
+        settings.host = "192.168.1.10"
+        assertEquals("http://192.168.1.10:29090", settings.endpoint)
+        settings.host = "::1"
+        assertEquals("http://[::1]:29090", settings.endpoint)
+        settings.host = "[::1]"
+        assertEquals("http://[::1]:29090", settings.endpoint)
+    }
+
     fun testCreatesDataDirectory() {
         val temporaryRoot = Files.createTempDirectory("local-s3-settings-test")
         val dataDirectory = temporaryRoot.resolve("nested/data")

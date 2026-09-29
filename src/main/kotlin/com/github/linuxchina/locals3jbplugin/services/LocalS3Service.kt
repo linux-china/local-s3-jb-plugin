@@ -225,14 +225,8 @@ class LocalS3Service : Disposable {
          * `GET /_health`, which answers `{"status":"UP"}`.
          */
         internal fun isLocalS3Listening(settings: LocalS3Settings): Boolean {
-            val host = when (settings.host) {
-                "0.0.0.0", "::", "[::]" -> "127.0.0.1"
-                else -> settings.host
-            }
-            val scheme = if (settings.tlsEnabled) "https" else "http"
-            val authority = if (host.contains(':') && !host.startsWith("[")) "[$host]" else host
             return try {
-                val connection = URI("$scheme://$authority:${settings.port}$HEALTH_CHECK_PATH").toURL()
+                val connection = URI("${settings.endpoint}$HEALTH_CHECK_PATH").toURL()
                     .openConnection(Proxy.NO_PROXY) as HttpURLConnection
                 if (connection is HttpsURLConnection) {
                     // Local S3 uses a self-signed certificate.

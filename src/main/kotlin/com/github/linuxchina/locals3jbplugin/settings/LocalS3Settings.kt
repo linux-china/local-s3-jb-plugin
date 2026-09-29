@@ -52,8 +52,17 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
             settingsState.dataPath = value.trim()
         }
 
+    /**
+     * The host that clients use to reach the server: the loopback address when listening on all interfaces.
+     */
+    val clientHost: String
+        get() = when (host) {
+            "0.0.0.0", "::", "[::]", "" -> DEFAULT_HOST
+            else -> if (host.contains(':') && !host.startsWith("[")) "[$host]" else host
+        }
+
     val endpoint: String
-        get() = "${if (tlsEnabled) "https" else "http"}://$DEFAULT_HOST:$port"
+        get() = "${if (tlsEnabled) "https" else "http"}://$clientHost:$port"
 
     val bucketNames: List<String>
         get() = buckets.split(',')
