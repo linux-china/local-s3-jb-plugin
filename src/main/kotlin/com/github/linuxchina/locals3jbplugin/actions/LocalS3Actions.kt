@@ -71,9 +71,27 @@ class OpenLocalS3AdminUiAction : LocalS3Action() {
     }
 }
 
-class CopyLocalS3EndpointAction : LocalS3Action() {
+/**
+ * Copies the environment variables that AWS SDKs and CLI read to reach Local S3, in `.env` format.
+ */
+class CopyLocalS3DotEnvAction : LocalS3Action() {
     override fun actionPerformed(e: AnActionEvent) {
-        CopyPasteManager.getInstance().setContents(StringSelection(LocalS3Settings.getInstance().endpoint))
+        CopyPasteManager.getInstance().setContents(StringSelection(dotEnv(LocalS3Settings.getInstance())))
+    }
+
+    companion object {
+        fun dotEnv(settings: LocalS3Settings): String = buildString {
+            appendLine("AWS_ENDPOINT_URL=${settings.endpoint}")
+            appendLine("AWS_ENDPOINT_URL_S3=${settings.endpoint}")
+            appendLine("AWS_REGION=${LocalS3Settings.REGION}")
+            appendLine("AWS_DEFAULT_REGION=${LocalS3Settings.REGION}")
+            // Without credentials, Local S3 accepts anonymous requests
+            if (settings.accessKeyId.isNotEmpty() && settings.secretAccessKey.isNotEmpty()) {
+                appendLine("AWS_ACCESS_KEY_ID=${settings.accessKeyId}")
+                appendLine("AWS_SECRET_ACCESS_KEY=${settings.secretAccessKey}")
+            }
+            settings.bucketNames.firstOrNull()?.let { appendLine("AWS_S3_BUCKET=$it") }
+        }
     }
 }
 

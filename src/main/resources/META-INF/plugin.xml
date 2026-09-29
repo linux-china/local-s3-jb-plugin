@@ -34,7 +34,7 @@
             <separator/>
             <action id="LocalS3.OpenAdminUi" class="com.github.linuxchina.locals3jbplugin.actions.OpenLocalS3AdminUiAction"
                     icon="AllIcons.General.Web"/>
-            <action id="LocalS3.CopyEndpoint" class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3EndpointAction"
+            <action id="LocalS3.CopyDotEnv" class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3DotEnvAction"
                     icon="AllIcons.Actions.Copy"/>
             <separator/>
             <action id="LocalS3.OpenSettings" class="com.github.linuxchina.locals3jbplugin.actions.OpenLocalS3SettingsAction"
