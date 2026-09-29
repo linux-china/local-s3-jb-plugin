@@ -134,7 +134,7 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         var secretAccessKey: String = DEFAULT_SECRET_ACCESS_KEY
         var buckets: String = DEFAULT_BUCKETS
         var dataPath: String = DEFAULT_DATA_PATH
-        var icebergEnabled: Boolean = true
+        var icebergEnabled: Boolean = false
         var icebergWarehouse: String = DEFAULT_ICEBERG_WAREHOUSE
     }
 
