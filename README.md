@@ -9,7 +9,7 @@ After project opened, and an S3 server will be started automatically.
 
 Features:
 
-- Light and fast: only Netty Jackson 3, and H2 MVStore dependencies 
+- Light and fast: only Netty, Jackson 3, and H2 MVStore dependencies 
 - S3 compatible API: `http://127.0.0.1:29090`
 - Credential support
 - TLS support

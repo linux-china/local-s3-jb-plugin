@@ -110,19 +110,24 @@ class LocalS3Service : Disposable {
             return true
         }
         val settings = LocalS3Settings.getInstance()
-        sharedEndpoint?.let {
+        val takingOver = sharedEndpoint?.let {
             if (isLocalS3Listening(settings)) {
                 return true
             }
             thisLogger().info("Shared Local S3 at $it has stopped, starting our own")
             sharedEndpoint = null
-        }
+            true
+        } ?: false
         if (reuseRunningLocalS3(settings, project)) {
             return true
         }
         try {
-            localS3 = buildLocalS3(settings).also(LocalS3::start)
+            val server = buildLocalS3(settings).also(LocalS3::start)
+            localS3 = server
             publishStarted(settings, LocalS3Status.RUNNING)
+            if (takingOver) {
+                notifyTakeOver(settings, server, project)
+            }
             return true
         } catch (e: Exception) {
             closeQuietly()
@@ -295,6 +300,19 @@ class LocalS3Service : Disposable {
             LocalS3Bundle["notification.shared.content", settings.endpoint],
         )
         return true
+    }
+
+    /**
+     * Tells that the shared Local S3 was replaced by our own, whose data path differs, so that buckets and objects
+     * that seem to have vanished don't come as a surprise.
+     */
+    private fun notifyTakeOver(settings: LocalS3Settings, server: LocalS3, project: Project?) {
+        notify(
+            project,
+            NotificationType.WARNING,
+            LocalS3Bundle["notification.takeOver.title", settings.endpoint],
+            LocalS3Bundle["notification.takeOver.content", server.dataPath],
+        )
     }
 
     private fun notifyStartFailure(settings: LocalS3Settings, error: Exception, project: Project?) {
