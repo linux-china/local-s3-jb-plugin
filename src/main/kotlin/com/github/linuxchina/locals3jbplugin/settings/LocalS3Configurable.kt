@@ -37,7 +37,8 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
 
         group(LocalS3Bundle["settings.storage.group"]) {
             row(LocalS3Bundle["settings.dataPath.label"]) {
-                textField()
+                @Suppress("UnstableApiUsage")
+                textFieldWithBrowseButton()
                     .bindText(settings::dataPath)
                     .columns(48)
                     .comment(LocalS3Bundle["settings.dataPath.comment"])
