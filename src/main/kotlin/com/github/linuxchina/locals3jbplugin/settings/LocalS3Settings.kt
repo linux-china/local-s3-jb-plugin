@@ -74,6 +74,9 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
     val endpoint: String
         get() = endpointOf(host, port, tlsEnabled)
 
+    val httpEndpoint: String
+        get() = endpointOf(host, port, false)
+
     val bucketNames: List<String>
         get() = buckets.split(',')
             .map(String::trim)

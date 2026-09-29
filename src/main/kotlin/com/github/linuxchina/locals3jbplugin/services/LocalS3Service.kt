@@ -389,7 +389,7 @@ class LocalS3Service : Disposable {
          * Tells whether a Local S3 answers on the configured port, by its unauthenticated health check
          * `GET /_health`, which answers `{"status":"UP"}`.
          */
-        internal fun isLocalS3Listening(settings: LocalS3Settings): Boolean = isLocalS3Listening(settings.endpoint)
+        internal fun isLocalS3Listening(settings: LocalS3Settings): Boolean = isLocalS3Listening(settings.httpEndpoint)
 
         fun isLocalS3Listening(endpoint: String): Boolean {
             return try {
