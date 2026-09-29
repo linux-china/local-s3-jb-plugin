@@ -52,17 +52,11 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
             settingsState.dataPath = value.trim()
         }
 
-    /**
-     * The host that clients use to reach the server: the loopback address when listening on all interfaces.
-     */
     val clientHost: String
-        get() = when (host) {
-            "0.0.0.0", "::", "[::]", "" -> DEFAULT_HOST
-            else -> if (host.contains(':') && !host.startsWith("[")) "[$host]" else host
-        }
+        get() = clientHostOf(host)
 
     val endpoint: String
-        get() = "${if (tlsEnabled) "https" else "http"}://$clientHost:$port"
+        get() = endpointOf(host, port, tlsEnabled)
 
     val bucketNames: List<String>
         get() = buckets.split(',')
@@ -114,11 +108,25 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         const val DEFAULT_ACCESS_KEY_ID = "admin"
         const val DEFAULT_SECRET_ACCESS_KEY = "admin"
         const val DEFAULT_BUCKETS = "demo-bucket"
+
+        /** Local S3 accepts any region; clients still need one to sign their requests. */
+        const val REGION = "us-east-1"
         val DEFAULT_DATA_PATH: String by lazy {
             Path.of(System.getProperty("user.home"), ".locals3", currentProductCode()).toString()
         }
 
         fun getInstance(): LocalS3Settings = service()
+
+        /**
+         * The host that clients use to reach the server: the loopback address when listening on all interfaces.
+         */
+        fun clientHostOf(host: String): String = when (val trimmed = host.trim()) {
+            "0.0.0.0", "::", "[::]", "" -> DEFAULT_HOST
+            else -> if (trimmed.contains(':') && !trimmed.startsWith("[")) "[$trimmed]" else trimmed
+        }
+
+        fun endpointOf(host: String, port: Int, tlsEnabled: Boolean): String =
+            "${if (tlsEnabled) "https" else "http"}://${clientHostOf(host)}:$port"
 
         private fun currentProductCode(): String {
             return ApplicationInfo.getInstance().build.productCode.ifEmpty { "IU" }

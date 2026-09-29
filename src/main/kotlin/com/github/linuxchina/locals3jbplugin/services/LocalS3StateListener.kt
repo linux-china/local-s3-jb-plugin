@@ -9,6 +9,11 @@ import com.intellij.util.messages.Topic
 fun interface LocalS3StateListener {
     fun started(endpoint: String)
 
+    /**
+     * Notified on every status change, including stops and failed starts, e.g. to refresh the status bar.
+     */
+    fun statusChanged(status: LocalS3Status) = Unit
+
     companion object {
         @Topic.AppLevel
         val TOPIC: Topic<LocalS3StateListener> = Topic(LocalS3StateListener::class.java)

@@ -26,7 +26,6 @@ class SyncLocalS3ConnectionListener : LocalS3StateListener {
 internal object LocalS3Connection {
     private const val LOCAL_S3_CONNECTION_ID = "com.github.linuxchina.locals3.connection"
     private const val LOCAL_S3_CONNECTION_NAME = "Local S3"
-    private const val LOCAL_S3_DEFAULT_REGION = "us-east-1"
 
     /**
      * Creates the Local S3 connection, or recreates it when its endpoint, credentials or TLS flag
@@ -73,8 +72,8 @@ internal object LocalS3Connection {
         name = LOCAL_S3_CONNECTION_NAME
         useCustomEndpoint = true
         customEndpoint = settings.endpoint
-        customRegion = LOCAL_S3_DEFAULT_REGION
-        region = LOCAL_S3_DEFAULT_REGION
+        customRegion = LocalS3Settings.REGION
+        region = LocalS3Settings.REGION
         if (settings.isAnonymous) {
             activeAuthenticationType = AuthenticationType.ANON.id
         } else {

@@ -104,6 +104,30 @@ class LocalS3ServiceTest : BasePlatformTestCase() {
         assertEquals(listOf(LocalS3Settings.getInstance().endpoint), startedEndpoints)
     }
 
+    fun testPublishesStatusChanges() {
+        val localS3Service = service<LocalS3Service>()
+        val statuses = mutableListOf<LocalS3Status>()
+        ApplicationManager.getApplication().messageBus.connect(testRootDisposable)
+            .subscribe(LocalS3StateListener.TOPIC, object : LocalS3StateListener {
+                override fun started(endpoint: String) = Unit
+                override fun statusChanged(status: LocalS3Status) {
+                    statuses += status
+                }
+            })
+        assertEquals(LocalS3Status.STOPPED, localS3Service.status())
+
+        assertTrue(localS3Service.start())
+        assertEquals(LocalS3Status.RUNNING, localS3Service.status())
+        localS3Service.stop()
+        assertEquals(LocalS3Status.STOPPED, localS3Service.status())
+
+        otherLocalS3 = startOtherLocalS3()
+        assertTrue(localS3Service.start())
+        assertEquals(LocalS3Status.SHARED, localS3Service.status())
+
+        assertEquals(listOf(LocalS3Status.RUNNING, LocalS3Status.STOPPED, LocalS3Status.SHARED), statuses)
+    }
+
     /**
      * Simulates a Local S3 started by another IDE on the configured port.
      */

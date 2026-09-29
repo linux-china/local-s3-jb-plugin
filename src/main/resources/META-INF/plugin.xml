@@ -12,12 +12,34 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <errorHandler implementation="com.intellij.diagnostic.JetBrainsMarketplaceErrorReportSubmitter"/>
-        <notificationGroup id="Local S3" displayType="BALLOON" key="notification.group"/>
+        <notificationGroup id="Local S3 Notification" displayType="BALLOON" key="notification.group"/>
         <postStartupActivity implementation="com.github.linuxchina.locals3jbplugin.startup.StartLocalS3Activity"/>
         <applicationConfigurable
                 id="com.github.linuxchina.locals3.settings"
                 parentId="tools"
                 key="settings.displayName"
                 instance="com.github.linuxchina.locals3jbplugin.settings.LocalS3Configurable"/>
+        <statusBarWidgetFactory id="LocalS3"
+                                implementation="com.github.linuxchina.locals3jbplugin.statusbar.LocalS3StatusBarWidgetFactory"/>
     </extensions>
+
+    <actions>
+        <group id="LocalS3.Actions" popup="true" icon="/icons/bucket-16.svg">
+            <action id="LocalS3.Start" class="com.github.linuxchina.locals3jbplugin.actions.StartLocalS3Action"
+                    icon="AllIcons.Actions.Execute"/>
+            <action id="LocalS3.Stop" class="com.github.linuxchina.locals3jbplugin.actions.StopLocalS3Action"
+                    icon="AllIcons.Actions.Suspend"/>
+            <action id="LocalS3.Restart" class="com.github.linuxchina.locals3jbplugin.actions.RestartLocalS3Action"
+                    icon="AllIcons.Actions.Restart"/>
+            <separator/>
+            <action id="LocalS3.OpenAdminUi" class="com.github.linuxchina.locals3jbplugin.actions.OpenLocalS3AdminUiAction"
+                    icon="AllIcons.General.Web"/>
+            <action id="LocalS3.CopyEndpoint" class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3EndpointAction"
+                    icon="AllIcons.Actions.Copy"/>
+            <separator/>
+            <action id="LocalS3.OpenSettings" class="com.github.linuxchina.locals3jbplugin.actions.OpenLocalS3SettingsAction"
+                    icon="AllIcons.General.Settings"/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </group>
+    </actions>
 </idea-plugin>

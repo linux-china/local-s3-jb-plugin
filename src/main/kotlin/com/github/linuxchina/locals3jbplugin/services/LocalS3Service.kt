@@ -37,6 +37,14 @@ class LocalS3Service : Disposable {
      */
     private var sharedEndpoint: String? = null
 
+    /**
+     * Read without locking, so that the status bar and actions don't wait for a start probing the port.
+     */
+    @Volatile
+    private var status: LocalS3Status = LocalS3Status.STOPPED
+
+    fun status(): LocalS3Status = status
+
     @Synchronized
     fun isRunning(): Boolean {
         return localS3?.isRunning ?: false
@@ -74,7 +82,7 @@ class LocalS3Service : Disposable {
         }
         try {
             localS3 = buildLocalS3(settings).also(LocalS3::start)
-            publishStarted(settings)
+            publishStarted(settings, LocalS3Status.RUNNING)
             return true
         } catch (e: Exception) {
             closeQuietly()
@@ -83,6 +91,7 @@ class LocalS3Service : Disposable {
                 return true
             }
             thisLogger().warn("Failed to start Local S3 at ${settings.endpoint}", e)
+            updateStatus(LocalS3Status.FAILED)
             notifyStartFailure(settings, e, project)
             return false
         }
@@ -124,6 +133,7 @@ class LocalS3Service : Disposable {
             }
             localS3 = null
         }
+        updateStatus(LocalS3Status.STOPPED)
     }
 
     override fun dispose() {
@@ -167,7 +177,7 @@ class LocalS3Service : Disposable {
         }
         sharedEndpoint = settings.endpoint
         thisLogger().info("Reusing Local S3 already running at ${settings.endpoint}")
-        publishStarted(settings)
+        publishStarted(settings, LocalS3Status.SHARED)
         notify(
             project,
             NotificationType.INFORMATION,
@@ -206,11 +216,20 @@ class LocalS3Service : Disposable {
         }
     }
 
-    private fun publishStarted(settings: LocalS3Settings) {
-        ApplicationManager.getApplication().messageBus
-            .syncPublisher(LocalS3StateListener.TOPIC)
-            .started(settings.endpoint)
+    private fun publishStarted(settings: LocalS3Settings, newStatus: LocalS3Status) {
+        updateStatus(newStatus)
+        publisher().started(settings.endpoint)
     }
+
+    private fun updateStatus(newStatus: LocalS3Status) {
+        if (status != newStatus) {
+            status = newStatus
+            publisher().statusChanged(newStatus)
+        }
+    }
+
+    private fun publisher(): LocalS3StateListener =
+        ApplicationManager.getApplication().messageBus.syncPublisher(LocalS3StateListener.TOPIC)
 
     private fun notify(
         project: Project?,
@@ -230,8 +249,9 @@ class LocalS3Service : Disposable {
         generateSequence(this) { it.cause.takeIf { cause -> cause !== it } }.toList()
 
     companion object {
-        const val NOTIFICATION_GROUP_ID = "Local S3"
+        const val NOTIFICATION_GROUP_ID = "Local S3 Notification"
         private const val HEALTH_CHECK_PATH = "/_health"
+        private const val ADMIN_UI_PATH = "/_admin/ui"
         private const val CONNECT_TIMEOUT_MILLIS = 500
         private const val READ_TIMEOUT_MILLIS = 1000
 
@@ -239,9 +259,11 @@ class LocalS3Service : Disposable {
          * Tells whether a Local S3 answers on the configured port, by its unauthenticated health check
          * `GET /_health`, which answers `{"status":"UP"}`.
          */
-        internal fun isLocalS3Listening(settings: LocalS3Settings): Boolean {
+        internal fun isLocalS3Listening(settings: LocalS3Settings): Boolean = isLocalS3Listening(settings.endpoint)
+
+        fun isLocalS3Listening(endpoint: String): Boolean {
             return try {
-                val connection = URI("${settings.endpoint}$HEALTH_CHECK_PATH").toURL()
+                val connection = URI("$endpoint$HEALTH_CHECK_PATH").toURL()
                     .openConnection(Proxy.NO_PROXY) as HttpURLConnection
                 if (connection is HttpsURLConnection) {
                     // Local S3 uses a self-signed certificate.
@@ -260,6 +282,8 @@ class LocalS3Service : Disposable {
                 false
             }
         }
+
+        fun adminUiUrl(endpoint: String): String = "$endpoint$ADMIN_UI_PATH"
 
         private val trustAllSslContext: SSLContext by lazy {
             val trustAll = object : X509TrustManager {
