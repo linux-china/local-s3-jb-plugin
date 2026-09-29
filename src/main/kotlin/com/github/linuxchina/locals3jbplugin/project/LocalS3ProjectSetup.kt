@@ -38,7 +38,7 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
      * Applies the configuration now, then each time Local S3 starts, e.g. after it was stopped or its settings changed.
      */
     fun applyAndSubscribe() {
-        apply()
+        // Subscribed first, so that a start between the two isn't missed: applying twice is harmless.
         if (subscribed.compareAndSet(false, true)) {
             ApplicationManager.getApplication().messageBus.connect(this)
                 .subscribe(LocalS3StateListener.TOPIC, LocalS3StateListener {
@@ -46,6 +46,7 @@ class LocalS3ProjectSetup(private val project: Project) : Disposable {
                     ApplicationManager.getApplication().executeOnPooledThread { apply() }
                 })
         }
+        apply()
     }
 
     /**
