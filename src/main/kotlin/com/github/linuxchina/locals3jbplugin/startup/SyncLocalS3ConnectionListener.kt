@@ -47,11 +47,21 @@ internal object LocalS3Connection {
         connectionSettings.addConnection(createConnectionData(settings))
     }
 
+    /**
+     * Local S3 only verifies signatures when both keys are set, see `LocalS3Service.buildLocalS3()`.
+     */
+    private val LocalS3Settings.isAnonymous: Boolean
+        get() = accessKeyId.isEmpty() || secretAccessKey.isEmpty()
+
     private fun S3ConnectionData.matches(settings: LocalS3Settings): Boolean {
+        if (!useCustomEndpoint || customEndpoint != settings.endpoint || trustAllSsl != settings.tlsEnabled) {
+            return false
+        }
+        if (settings.isAnonymous) {
+            return activeAuthenticationType == AuthenticationType.ANON.id
+        }
         val credentials = getCredentials(AwsCompatibleConnectionDataBase.SECRET_KEY_ID)
-        return useCustomEndpoint &&
-                customEndpoint == settings.endpoint &&
-                trustAllSsl == settings.tlsEnabled &&
+        return activeAuthenticationType == AuthenticationType.KEY_PAIR.id &&
                 credentials?.userName == settings.accessKeyId &&
                 credentials.getPasswordAsString() == settings.secretAccessKey
     }
@@ -65,11 +75,15 @@ internal object LocalS3Connection {
         customEndpoint = settings.endpoint
         customRegion = LOCAL_S3_DEFAULT_REGION
         region = LOCAL_S3_DEFAULT_REGION
-        activeAuthenticationType = AuthenticationType.KEY_PAIR.id
-        setCredentials(
-            Credentials(settings.accessKeyId, settings.secretAccessKey),
-            AwsCompatibleConnectionDataBase.SECRET_KEY_ID
-        )
+        if (settings.isAnonymous) {
+            activeAuthenticationType = AuthenticationType.ANON.id
+        } else {
+            activeAuthenticationType = AuthenticationType.KEY_PAIR.id
+            setCredentials(
+                Credentials(settings.accessKeyId, settings.secretAccessKey),
+                AwsCompatibleConnectionDataBase.SECRET_KEY_ID
+            )
+        }
         profileName = "default"
         isEnabled = true
         isMultiBucketSupport = true
