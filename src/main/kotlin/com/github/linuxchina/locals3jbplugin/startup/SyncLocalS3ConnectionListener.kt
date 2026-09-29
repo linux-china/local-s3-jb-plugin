@@ -71,7 +71,7 @@ internal object LocalS3Connection {
     ).apply {
         name = LOCAL_S3_CONNECTION_NAME
         useCustomEndpoint = true
-        customEndpoint = settings.endpoint
+        customEndpoint = settings.httpEndpoint
         customRegion = LocalS3Settings.REGION
         region = LocalS3Settings.REGION
         if (settings.isAnonymous) {
