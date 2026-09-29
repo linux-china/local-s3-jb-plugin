@@ -6,7 +6,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 @Service(Service.Level.APP)
-@State(name = "LocalS3Settings", storages = [Storage("LocalS3.xml")])
+@State(name = "LocalS3Settings", storages = [Storage("LocalS3.xml", roamingType = RoamingType.DISABLED)])
 class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> {
     private var settingsState = SettingsState()
 

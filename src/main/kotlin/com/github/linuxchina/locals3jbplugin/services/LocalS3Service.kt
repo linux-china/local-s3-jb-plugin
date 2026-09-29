@@ -15,6 +15,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.util.concurrency.AppExecutorUtil
 import com.robothy.s3.rest.LocalS3
 import com.robothy.s3.rest.bootstrap.LocalS3Mode
 import java.net.BindException
@@ -23,6 +24,8 @@ import java.net.Proxy
 import java.net.URI
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
@@ -42,6 +45,11 @@ class LocalS3Service : Disposable {
      */
     @Volatile
     private var status: LocalS3Status = LocalS3Status.STOPPED
+
+    /**
+     * Periodic check scheduled while Local S3 is available, see [checkHealth].
+     */
+    private var healthCheck: ScheduledFuture<*>? = null
 
     fun status(): LocalS3Status = status
 
@@ -104,6 +112,60 @@ class LocalS3Service : Disposable {
     fun takeOverIfSharedServerGone(project: Project? = null) {
         if (isShared()) {
             start(project)
+        }
+    }
+
+    /**
+     * Takes over a shared Local S3 that has stopped, and detects our own server having stopped unexpectedly, so that
+     * the status doesn't stay available while clients can't reach it.
+     */
+    private fun checkHealth() {
+        when (status) {
+            // Probe without the lock, so that actions don't wait for it; start() probes again before taking over.
+            LocalS3Status.SHARED -> if (!isLocalS3Listening(LocalS3Settings.getInstance())) {
+                takeOverIfSharedServerGone()
+            }
+
+            LocalS3Status.RUNNING -> detectUnexpectedStop()
+            else -> Unit
+        }
+    }
+
+    @Synchronized
+    private fun detectUnexpectedStop() {
+        val server = localS3 ?: return
+        if (status != LocalS3Status.RUNNING || server.isRunning) {
+            return
+        }
+        val settings = LocalS3Settings.getInstance()
+        thisLogger().warn("Local S3 at ${settings.endpoint} has stopped unexpectedly")
+        closeQuietly()
+        updateStatus(LocalS3Status.FAILED)
+        notify(
+            null,
+            NotificationType.ERROR,
+            LocalS3Bundle["notification.unexpectedStop.title", settings.endpoint],
+            LocalS3Bundle["notification.unexpectedStop.content"],
+        ) {
+            addAction(NotificationAction.createSimpleExpiring(LocalS3Bundle["notification.action.retry"]) {
+                ApplicationManager.getApplication().executeOnPooledThread {
+                    start()
+                }
+            })
+        }
+    }
+
+    private fun scheduleHealthCheck(available: Boolean) {
+        if (available && healthCheck == null) {
+            healthCheck = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay(
+                { runCatching(::checkHealth).onFailure { thisLogger().warn("Local S3 health check failed", it) } },
+                HEALTH_CHECK_INTERVAL_SECONDS,
+                HEALTH_CHECK_INTERVAL_SECONDS,
+                TimeUnit.SECONDS,
+            )
+        } else if (!available) {
+            healthCheck?.cancel(false)
+            healthCheck = null
         }
     }
 
@@ -222,6 +284,7 @@ class LocalS3Service : Disposable {
     }
 
     private fun updateStatus(newStatus: LocalS3Status) {
+        scheduleHealthCheck(newStatus.isAvailable)
         if (status != newStatus) {
             status = newStatus
             publisher().statusChanged(newStatus)
@@ -254,6 +317,7 @@ class LocalS3Service : Disposable {
         private const val ADMIN_UI_PATH = "/_admin/ui"
         private const val CONNECT_TIMEOUT_MILLIS = 500
         private const val READ_TIMEOUT_MILLIS = 1000
+        private const val HEALTH_CHECK_INTERVAL_SECONDS = 20L
 
         /**
          * Tells whether a Local S3 answers on the configured port, by its unauthenticated health check

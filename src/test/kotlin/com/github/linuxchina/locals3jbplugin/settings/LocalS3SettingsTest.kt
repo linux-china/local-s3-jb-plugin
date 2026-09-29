@@ -22,13 +22,13 @@ class LocalS3SettingsTest : BasePlatformTestCase() {
 
     fun testNormalizesBucketNamesAndCreatesTlsEndpoint() {
         val settings = LocalS3Settings().apply {
-            host = " localhost "
+            host = "127.0.0.1"
             port = 9443
             tlsEnabled = true
             buckets = " first, second, first, ,third "
         }
 
-        assertEquals("https://localhost:9443", settings.endpoint)
+        assertEquals("https://127.0.0.1:9443", settings.endpoint)
         assertEquals(listOf("first", "second", "third"), settings.bucketNames)
     }
 

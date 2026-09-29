@@ -10,7 +10,7 @@
 ### Added
 
 - Init version: plugin settings, Big Data tools compatible
-- Light and fast: only Netty and Jackson required
+- Light and fast: only Netty Jackson 3, and H2 MVStore dependencies
 - S3 compatible API: http://127.0.0.1:29090
 - Credential support
 - TLS support
