@@ -2,13 +2,6 @@ import org.jetbrains.intellij.platform.gradle.extensions.intellijPlatform
 
 rootProject.name = "local-s3-jb-plugin"
 
-dependencyResolutionManagement {
-    repositories {
-        mavenLocal()
-        mavenCentral()
-    }
-}
-
 pluginManagement {
     plugins {
         id("org.jetbrains.kotlin.jvm") version "2.4.20"
@@ -25,6 +18,7 @@ plugins {
 dependencyResolutionManagement {
     // Configure all projects' repositories
     repositories {
+        mavenLocal()
         mavenCentral()
 
         // IntelliJ Platform Gradle Plugin Repositories Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-repositories-extension.html
