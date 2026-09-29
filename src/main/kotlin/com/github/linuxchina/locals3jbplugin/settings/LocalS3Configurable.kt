@@ -183,8 +183,11 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
     override fun apply() {
         val previousServerConfig = settings.serverConfig()
         super.apply()
-        if (settings.serverConfig() != previousServerConfig) {
-            service<LocalS3Service>().restartInBackground()
+        // A stopped server stays stopped, e.g. after the user stopped it or with auto start disabled: the new settings
+        // are used on its next start. A failed one is retried with the new settings.
+        val localS3Service = service<LocalS3Service>()
+        if (settings.serverConfig() != previousServerConfig && localS3Service.status() != LocalS3Status.STOPPED) {
+            localS3Service.restartInBackground()
         }
         updateConnectionInfo()
     }

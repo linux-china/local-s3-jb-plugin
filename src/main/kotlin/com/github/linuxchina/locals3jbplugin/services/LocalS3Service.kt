@@ -235,7 +235,7 @@ class LocalS3Service : Disposable {
             .dataPath(dataDirectory.toString())
             .buckets(*settings.bucketNames.toTypedArray())
             .netty {
-                it.daemonThreads(true)
+                it.daemonThreads(true).registerShutdownHook(false)
             }
         if (settings.accessKeyId.isNotEmpty() && settings.secretAccessKey.isNotEmpty()) {
             builder.credentials(settings.accessKeyId, settings.secretAccessKey)
