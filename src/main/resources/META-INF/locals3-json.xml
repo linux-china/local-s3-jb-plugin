@@ -1,0 +1,11 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="JavaScript.JsonSchema">
+        <ProviderFactory implementation="com.github.linuxchina.locals3jbplugin.json.LocalS3JsonSchemaProviderFactory"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <annotator language="JSON" implementationClass="com.github.linuxchina.locals3jbplugin.json.LocalS3BucketNameAnnotator"/>
+        <psi.referenceContributor language="JSON"
+                                  implementation="com.github.linuxchina.locals3jbplugin.json.LocalS3SeedPathReferenceContributor"/>
+    </extensions>
+</idea-plugin>

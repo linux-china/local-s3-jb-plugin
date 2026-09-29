@@ -12,6 +12,7 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.progress.ProgressIndicator
@@ -261,8 +262,8 @@ class OpenLocalS3SettingsAction : LocalS3Action() {
 }
 
 /**
- * Applies the `.locals3.json` open in the editor, including its unsaved changes, from the editor popup menu. Its local
- * paths are resolved against its directory. Only shown for that file, and only enabled when Local S3 is started by
+ * Applies a `.locals3.json`, including its unsaved changes, from the editor or Project view popup menu. Its local paths
+ * are resolved against its directory. Only shown for that file, and only enabled when Local S3 is started by
  * this IDE: a shared one belongs to another process.
  */
 class SyncLocalS3ProjectConfigAction : LocalS3Action() {
@@ -276,7 +277,10 @@ class SyncLocalS3ProjectConfigAction : LocalS3Action() {
         val project = e.project ?: return
         val file = configFile(e) ?: return
         val baseDirectory = file.parent?.toNioPathOrNull() ?: return
-        val text = e.getData(CommonDataKeys.EDITOR)?.document?.text ?: return
+        // The Project view has no editor: the document of the file still holds its unsaved changes.
+        val text = e.getData(CommonDataKeys.EDITOR)?.document?.text
+            ?: FileDocumentManager.getInstance().getDocument(file)?.text
+            ?: return
         // Runs in its own cancelable background task, which shows the progress of the import.
         project.service<LocalS3ProjectSetup>().sync(text, baseDirectory)
     }

@@ -7,6 +7,7 @@
     <depends>com.intellij.modules.platform</depends>
 
     <depends optional="true" config-file="locals3-bigdata.xml">com.intellij.bigdatatools.rfs</depends>
+    <depends optional="true" config-file="locals3-json.xml">com.intellij.modules.json</depends>
 
     <resource-bundle>messages.LocalS3Bundle</resource-bundle>
 
@@ -19,6 +20,7 @@
                 parentId="tools"
                 key="settings.displayName"
                 instance="com.github.linuxchina.locals3jbplugin.settings.LocalS3Configurable"/>
+        <fileIconProvider implementation="com.github.linuxchina.locals3jbplugin.project.LocalS3ProjectConfigIconProvider"/>
         <statusBarWidgetFactory id="LocalS3"
                                 implementation="com.github.linuxchina.locals3jbplugin.statusbar.LocalS3StatusBarWidgetFactory"/>
     </extensions>
@@ -58,6 +60,7 @@
         <action id="LocalS3.SyncProjectConfig" class="com.github.linuxchina.locals3jbplugin.actions.SyncLocalS3ProjectConfigAction"
                 icon="AllIcons.Actions.Refresh">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>
     </actions>
 </idea-plugin>

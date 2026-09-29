@@ -62,6 +62,10 @@ When the project is opened, and each time Local S3 starts afterward, the buckets
 - Local paths are relative to the project root; absolute paths and `~/` are accepted.
 - Existing objects are overwritten with the content of their seed files, so that changes to the seed files are imported.
 
+`.locals3.json` is completed and validated with its JSON Schema, and invalid bucket names are reported as you type. The
+seed local paths are completed and navigable. Right-click it in the editor or the Project view and choose
+**Sync .locals3.json** to apply it again.
+
 ## Installation
 
 - Using the IDE built-in plugin system:

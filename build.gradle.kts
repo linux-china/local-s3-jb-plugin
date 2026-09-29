@@ -27,6 +27,7 @@ dependencies {
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
         intellijIdea("2026.2")
+        bundledPlugin("com.intellij.modules.json")
         testFramework(TestFrameworkType.Platform)
 //        plugin("com.intellij.bigdatatools", "262.8665.337")
         plugin("intellij.bigdatatools.awsBase", "262.8665.369")
@@ -40,6 +41,11 @@ dependencies {
 }
 
 tasks {
+    // In the test sandbox, the bundled Swagger plugin fails on mixed Jackson versions as soon as JSON Schemas are used.
+    prepareTestSandbox {
+        disabledPlugins.add("com.intellij.swagger")
+    }
+
     patchPluginXml {
         version = properties("version")
         sinceBuild.set(properties("pluginSinceBuild"))

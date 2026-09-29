@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": ".locals3.json",
+  "description": "The buckets and seed data a project needs in Local S3.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "buckets": {
+      "description": "The buckets to create. The buckets named by \"seed\" are created too.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "description": "A bucket name: 3 to 63 lowercase letters, numbers, periods and hyphens, beginning and ending with a letter or number."
+      },
+      "default": []
+    },
+    "seed": {
+      "description": "The local files or directories to import, by object path, by bucket.",
+      "type": "object",
+      "additionalProperties": {
+        "description": "The local files or directories to import into this bucket, by object path.",
+        "type": "object",
+        "additionalProperties": {
+          "type": "string",
+          "description": "A local file or directory, relative to the directory of .locals3.json; absolute paths and ~/ are accepted. A file is imported as the object path, or under it if it ends with /. The files of a directory are imported under the object path."
+        }
+      },
+      "default": {}
+    }
+  }
+}

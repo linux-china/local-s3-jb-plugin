@@ -10,6 +10,9 @@
 - Project buckets and seed data declared in `.locals3.json` at the project root
 - Iceberg REST catalog settings: enable/disable and warehouse location
 - Copy Connection As...: PyIceberg `.pyiceberg.yaml`, Spark Iceberg catalog properties and DuckDB Iceberg `ATTACH`
+- `.locals3.json` editing: JSON Schema completion and validation, invalid bucket name errors, completion and navigation
+  of seed local paths, and a file icon
+- Sync `.locals3.json` from the Project view popup menu
 
 ### Fixed
 
