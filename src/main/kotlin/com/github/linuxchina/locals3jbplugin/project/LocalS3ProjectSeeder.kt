@@ -110,7 +110,7 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
         Files.newInputStream(file).use { content ->
             objectService.putObject(
                 bucket, key, PutObjectOptions.builder()
-                    .contentType(Files.probeContentType(file))
+                    .contentType(Files.probeContentType(file) ?: "application/octet-stream")
                     .size(Files.size(file))
                     .content(content)
                     .build()
