@@ -11,10 +11,10 @@
 
 - Init version: plugin settings, Big Data tools compatible
 - Light and fast: only Netty and Jackson required
-- S3 compatible API: http://localhost:29090
+- S3 compatible API: http://127.0.0.1:29090
 - Credential support
 - TLS support
 - IceBerg REST Catalog
-- Admin UI: http://localhost:29090/_admin/ui
-- Web Hosting: http://localhost:29090
+- Admin UI: http://127.0.0.1:29090/_admin/ui
+- Web Hosting: http://127.0.0.1:29090
 
