@@ -31,7 +31,7 @@ class LocalS3StatusBarWidgetFactory : StatusBarWidgetFactory {
 }
 
 /**
- * Shows the Local S3 icon, with the status in its tooltip, and the Local S3 actions on click.
+ * Shows the Local S3 icon, reflecting the status, with details in its tooltip, and the Local S3 actions on click.
  */
 class LocalS3StatusBarWidget : StatusBarWidget, StatusBarWidget.IconPresentation {
     private var statusBar: StatusBar? = null
@@ -57,7 +57,12 @@ class LocalS3StatusBarWidget : StatusBarWidget, StatusBarWidget.IconPresentation
 
     override fun getPresentation() = this
 
-    override fun getIcon(): Icon = LocalS3Icons.Bucket
+    override fun getIcon(): Icon = when (status()) {
+        LocalS3Status.RUNNING -> LocalS3Icons.Bucket
+        LocalS3Status.SHARED -> LocalS3Icons.BucketShared
+        LocalS3Status.STOPPED -> LocalS3Icons.BucketStopped
+        LocalS3Status.FAILED -> LocalS3Icons.BucketFailed
+    }
 
     override fun getTooltipText(): String {
         val status = status()
