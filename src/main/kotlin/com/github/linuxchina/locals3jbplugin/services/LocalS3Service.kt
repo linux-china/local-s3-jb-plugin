@@ -125,8 +125,9 @@ class LocalS3Service : Disposable {
             return true
         } catch (e: Exception) {
             closeQuietly()
-            // Another IDE may have bound the port between the probe and our start.
-            if (reuseRunningLocalS3(settings, project)) {
+            // Another IDE may have bound the port or locked the data directory between the probe and our start. It
+            // locks the data directory before binding the port, so give it some time to start listening.
+            if (awaitRunningLocalS3(settings, project, e.isRaceWithOtherProcess())) {
                 return true
             }
             thisLogger().warn("Failed to start Local S3 at ${settings.endpoint}", e)
@@ -280,6 +281,22 @@ class LocalS3Service : Disposable {
         localS3 = null
     }
 
+    /**
+     * @param retry whether to probe several times, e.g. when another process is starting Local S3 concurrently.
+     */
+    private fun awaitRunningLocalS3(settings: LocalS3Settings, project: Project?, retry: Boolean): Boolean {
+        val attempts = if (retry) RACE_PROBE_ATTEMPTS else 1
+        repeat(attempts) { attempt ->
+            if (attempt > 0) {
+                Thread.sleep(RACE_PROBE_DELAY_MILLIS)
+            }
+            if (reuseRunningLocalS3(settings, project)) {
+                return true
+            }
+        }
+        return false
+    }
+
     private fun reuseRunningLocalS3(settings: LocalS3Settings, project: Project?): Boolean {
         if (!isLocalS3Listening(settings)) {
             return false
@@ -311,12 +328,8 @@ class LocalS3Service : Disposable {
 
     private fun notifyStartFailure(settings: LocalS3Settings, error: Exception, project: Project?) {
         val content = when {
-            error.causes()
-                .any { it is BindException || it.message.orEmpty().contains("Address already in use", true) } ->
-                LocalS3Bundle["notification.startFailed.portInUse", settings.port]
-
-            error.causes().any { it.message.orEmpty().contains("locked", true) } ->
-                LocalS3Bundle["notification.startFailed.dataLocked", settings.dataPath]
+            error.isPortInUse() -> LocalS3Bundle["notification.startFailed.portInUse", settings.port]
+            error.isDataLocked() -> LocalS3Bundle["notification.startFailed.dataLocked", settings.dataPath]
 
             else -> LocalS3Bundle["notification.startFailed.other", error.causes().last().message
                 ?: error.javaClass.simpleName]
@@ -368,6 +381,13 @@ class LocalS3Service : Disposable {
             .notify(project)
     }
 
+    private fun Throwable.isPortInUse(): Boolean =
+        causes().any { it is BindException || it.message.orEmpty().contains("Address already in use", true) }
+
+    private fun Throwable.isDataLocked(): Boolean = causes().any { it.message.orEmpty().contains("locked", true) }
+
+    private fun Throwable.isRaceWithOtherProcess(): Boolean = isPortInUse() || isDataLocked()
+
     private fun Throwable.causes(): List<Throwable> =
         generateSequence(this) { it.cause.takeIf { cause -> cause !== it } }.toList()
 
@@ -378,6 +398,12 @@ class LocalS3Service : Disposable {
         private const val CONNECT_TIMEOUT_MILLIS = 500
         private const val READ_TIMEOUT_MILLIS = 1000
         private const val HEALTH_CHECK_INTERVAL_SECONDS = 20L
+
+        /**
+         * How long to wait for another process that locked the data directory or bound the port to start listening.
+         */
+        private const val RACE_PROBE_ATTEMPTS = 10
+        private const val RACE_PROBE_DELAY_MILLIS = 300L
 
         /**
          * Tells whether a Local S3 answers on the configured port, by its unauthenticated health check
