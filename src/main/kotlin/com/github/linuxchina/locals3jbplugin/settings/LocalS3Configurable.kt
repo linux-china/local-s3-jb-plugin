@@ -78,7 +78,7 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
                         val host = it.text.trim()
                         when {
                             host.isEmpty() -> error(LocalS3Bundle["settings.host.required"])
-                            !isIpAddress(host) -> error(LocalS3Bundle["settings.host.invalid"])
+                            !isValidHost(host) -> error(LocalS3Bundle["settings.host.invalid"])
                             else -> null
                         }
                     }
@@ -237,10 +237,10 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
         private val BUCKET_NAME_REGEX = Regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
 
         /**
-         * Accepts IPv4 and IPv6 addresses, the latter optionally in brackets, e.g. `[::]`.
+         * Accepts `localhost`, IPv4 and IPv6 addresses, the latter optionally in brackets, e.g. `[::]`.
          */
-        internal fun isIpAddress(host: String): Boolean =
-            InetAddresses.isInetAddress(host.removeSurrounding("[", "]"))
+        internal fun isValidHost(host: String): Boolean =
+            InetAddresses.isInetAddress(LocalS3Settings.bindHostOf(host).removeSurrounding("[", "]"))
 
         /**
          * Returns the names that break the S3 bucket naming rules, which would make Local S3 fail to start.

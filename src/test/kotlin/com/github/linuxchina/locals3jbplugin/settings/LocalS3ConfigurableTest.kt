@@ -3,12 +3,12 @@ package com.github.linuxchina.locals3jbplugin.settings
 import junit.framework.TestCase
 
 class LocalS3ConfigurableTest : TestCase() {
-    fun testAcceptsIpAddressesOnly() {
-        listOf("127.0.0.1", "0.0.0.0", "::", "[::]", "::1", "[::1]", "192.168.1.10").forEach {
-            assertTrue(it, LocalS3Configurable.isIpAddress(it))
+    fun testAcceptsLocalhostAndIpAddressesOnly() {
+        listOf("localhost", "LocalHost", "127.0.0.1", "0.0.0.0", "::", "[::]", "::1", "[::1]", "192.168.1.10").forEach {
+            assertTrue(it, LocalS3Configurable.isValidHost(it))
         }
-        listOf("localhost", "256.0.0.1", "127.0.0", "abc", "[127.0.0.1").forEach {
-            assertFalse(it, LocalS3Configurable.isIpAddress(it))
+        listOf("example.com", "256.0.0.1", "127.0.0", "abc", "[127.0.0.1").forEach {
+            assertFalse(it, LocalS3Configurable.isValidHost(it))
         }
     }
 

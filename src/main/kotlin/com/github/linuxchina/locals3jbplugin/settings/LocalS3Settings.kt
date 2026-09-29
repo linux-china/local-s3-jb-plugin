@@ -2,6 +2,7 @@ package com.github.linuxchina.locals3jbplugin.settings
 
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.components.*
+import com.intellij.openapi.util.io.FileUtil
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -61,6 +62,12 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
             settingsState.dataPath = value.trim()
         }
 
+    /**
+     * The address the server binds to: `localhost` is resolved to the loopback address.
+     */
+    val bindHost: String
+        get() = bindHostOf(host)
+
     val clientHost: String
         get() = clientHostOf(host)
 
@@ -78,7 +85,7 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
      */
     fun serverConfig() = ServerConfig(host, port, tlsEnabled, dataPath, accessKeyId, secretAccessKey, bucketNames)
 
-    fun ensureDataDirectory(): Path = Path.of(dataPath)
+    fun ensureDataDirectory(): Path = Path.of(FileUtil.expandUserHome(dataPath))
         .toAbsolutePath()
         .normalize()
         .also(Files::createDirectories)
@@ -126,6 +133,10 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         }
 
         fun getInstance(): LocalS3Settings = service()
+
+        fun bindHostOf(host: String): String = host.trim().let {
+            if (it.equals("localhost", ignoreCase = true)) DEFAULT_HOST else it
+        }
 
         /**
          * The host that clients use to reach the server: the loopback address when listening on all interfaces.

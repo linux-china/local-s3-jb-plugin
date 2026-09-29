@@ -63,4 +63,28 @@ class LocalS3SettingsTest : BasePlatformTestCase() {
             Files.deleteIfExists(temporaryRoot)
         }
     }
+
+    fun testExpandsUserHomeInDataPath() {
+        val name = "local-s3-settings-test-${System.nanoTime()}"
+        val expected = Path.of(System.getProperty("user.home"), name).toAbsolutePath().normalize()
+        try {
+            val settings = LocalS3Settings().apply {
+                dataPath = "~/$name"
+            }
+
+            assertEquals(expected, settings.ensureDataDirectory())
+            assertTrue(Files.isDirectory(expected))
+        } finally {
+            Files.deleteIfExists(expected)
+        }
+    }
+
+    fun testResolvesLocalhostBindHost() {
+        val settings = LocalS3Settings()
+        settings.host = "localhost"
+        assertEquals("127.0.0.1", settings.bindHost)
+        assertEquals("http://localhost:${settings.port}", settings.endpoint)
+        settings.host = "0.0.0.0"
+        assertEquals("0.0.0.0", settings.bindHost)
+    }
 }

@@ -239,7 +239,7 @@ class LocalS3Service : Disposable {
     private fun buildLocalS3(settings: LocalS3Settings): LocalS3 {
         val dataDirectory = settings.ensureDataDirectory()
         val builder = LocalS3.builder()
-            .bindHost(settings.host)
+            .bindHost(settings.bindHost)
             .port(settings.port)
             .mode(LocalS3Mode.PERSISTENCE)
             .dataPath(dataDirectory.toString())
