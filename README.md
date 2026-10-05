@@ -17,6 +17,7 @@ Features:
 - Admin UI: `http://127.0.0.1:29090/_admin/ui`
 - Web Hosting: `http://127.0.0.1:29090`
 - Big Data Tools compatible
+- Local S3 widget icon: Ops management and convenient actions: copy `.env` to support S3 CLI, s5cmd, Bun, OpenDAL, DataFusion etc. 
 - Project buckets and seed data: `.locals3.json` at the project root
 
 `.locals3.json` file example: 
