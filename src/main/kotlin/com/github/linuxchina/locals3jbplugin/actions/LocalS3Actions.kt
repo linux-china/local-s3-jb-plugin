@@ -111,6 +111,7 @@ class CopyLocalS3DotEnvAction : CopyLocalS3ConnectionAction() {
         fun dotEnv(settings: LocalS3Settings): String = buildString {
             appendLine("AWS_ENDPOINT=${settings.endpoint}")
             appendLine("AWS_ENDPOINT_URL=${settings.endpoint}")
+            appendLine("AWS_ENDPOINT_URL_S3=${settings.endpoint}")
             appendLine("S3_ENDPOINT_URL=${settings.endpoint}")
             appendLine("AWS_REGION=${LocalS3Settings.REGION}")
             if (hasCredentials(settings)) {
