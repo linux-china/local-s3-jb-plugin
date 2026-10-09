@@ -118,6 +118,7 @@ class CopyLocalS3DotEnvAction : CopyLocalS3ConnectionAction() {
                 appendLine("AWS_SECRET_ACCESS_KEY=${settings.secretAccessKey}")
             }
             appendLine("S3_ENDPOINT=${settings.endpoint}")
+            appendLine("S3_ENDPOINT_URL=${settings.endpoint}")
             appendLine("S3_REGION=${LocalS3Settings.REGION}")
             if (hasCredentials(settings)) {
                 appendLine("S3_ACCESS_KEY_ID=${settings.accessKeyId}")
