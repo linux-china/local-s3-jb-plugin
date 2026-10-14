@@ -4,6 +4,7 @@ import com.github.linuxchina.locals3jbplugin.services.createBucketIfAbsent
 import com.intellij.openapi.progress.ProgressIndicator
 import com.robothy.s3.core.exception.ObjectNotExistException
 import com.robothy.s3.core.exception.VersionedObjectNotExistException
+import com.robothy.s3.core.model.answers.GetObjectAns
 import com.robothy.s3.core.model.request.GetObjectOptions
 import com.robothy.s3.core.model.request.PutObjectOptions
 import com.robothy.s3.core.service.manager.LocalS3Manager
@@ -99,32 +100,53 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
     /**
      * Puts the file as the object, overwriting it, so that changes made to the seed files are imported.
      *
+     * The modification time and size of the file are kept in the user metadata of the object, so that an unchanged
+     * file is skipped without reading it; otherwise, the file is read to compare its ETag with the object's.
+     *
      * @return `true` if the object was imported, `false` if it already held the content of the file.
      */
     private fun putObjectIfChanged(bucket: String, key: String, file: Path): Boolean {
-        val objectService = manager.objectService()
-        val etag = objectEtag(bucket, key)
-        if (etag != null && etag == Files.newInputStream(file).use(S3ObjectUtils::etag)) {
-            return false
+        val size = Files.size(file)
+        val seedMetadata = mapOf(
+            SEED_MTIME_METADATA to Files.getLastModifiedTime(file).toMillis().toString(),
+            SEED_SIZE_METADATA to size.toString(),
+        )
+        val existing = headObject(bucket, key)
+        if (existing != null) {
+            val userMetadata = existing.userMetadata.orEmpty()
+            if (existing.size == size && seedMetadata.all { (name, value) -> userMetadata[name] == value }) {
+                return false
+            }
+            if (existing.etag == Files.newInputStream(file).use(S3ObjectUtils::etag)) {
+                // Same content, e.g. the file was touched or the object was put by an S3 client: put it again anyway,
+                // so that the file isn't read on next imports.
+                putObject(bucket, key, file, seedMetadata)
+                return false
+            }
         }
+        putObject(bucket, key, file, seedMetadata)
+        return true
+    }
+
+    private fun putObject(bucket: String, key: String, file: Path, userMetadata: Map<String, String>) {
         // Stream the content rather than pass the file: the storage may take a file over, i.e. move it.
         Files.newInputStream(file).use { content ->
-            objectService.putObject(
+            manager.objectService().putObject(
                 bucket, key, PutObjectOptions.builder()
                     .contentType(contentType(file))
                     .size(Files.size(file))
                     .content(content)
+                    .userMetadata(userMetadata)
                     .build()
             )
         }
-        return true
     }
 
     /**
-     * @return the ETag of the object, or `null` if it doesn't exist.
+     * @return the object without its content, or `null` if it doesn't exist.
      */
-    private fun objectEtag(bucket: String, key: String): String? = try {
-        manager.objectService().headObject(bucket, key, GetObjectOptions.builder().build()).etag
+    private fun headObject(bucket: String, key: String): GetObjectAns? = try {
+        manager.objectService().headObject(bucket, key, GetObjectOptions.builder().build())
     } catch (_: ObjectNotExistException) {
         null
     } catch (_: VersionedObjectNotExistException) {
@@ -145,6 +167,12 @@ class LocalS3ProjectSeeder(private val manager: LocalS3Manager, private val proj
          * The maximum number of files imported from a directory, so that a wrong path doesn't import a whole tree.
          */
         const val MAX_FILES_PER_DIRECTORY = 256
+
+        /**
+         * User metadata of seeded objects: the modification time, in milliseconds, and the size of their seed file.
+         */
+        private const val SEED_MTIME_METADATA = "locals3-seed-mtime"
+        private const val SEED_SIZE_METADATA = "locals3-seed-size"
 
         private const val DEFAULT_CONTENT_TYPE = "application/octet-stream"
 

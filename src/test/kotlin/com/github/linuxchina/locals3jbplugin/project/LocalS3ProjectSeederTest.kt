@@ -7,6 +7,8 @@ import com.robothy.s3.core.model.request.GetObjectOptions
 import com.robothy.s3.core.service.manager.LocalS3Manager
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.FileTime
+import java.nio.file.attribute.PosixFilePermissions
 
 class LocalS3ProjectSeederTest : BasePlatformTestCase() {
     private lateinit var projectDirectory: Path
@@ -106,6 +108,39 @@ class LocalS3ProjectSeederTest : BasePlatformTestCase() {
 
         assertEquals(1, changed.importedObjects)
         assertEquals("changed", read("demo-bucket", "readme.txt"))
+    }
+
+    fun testSkipsUnchangedFilesWithoutReadingThem() {
+        val file = Files.writeString(projectDirectory.resolve("data.parquet"), "parquet")
+        val config = LocalS3ProjectConfig(seed = mapOf("demo-bucket" to mapOf("data.parquet" to "data.parquet")))
+        LocalS3ProjectSeeder(manager, projectDirectory).apply(config)
+
+        Files.setPosixFilePermissions(file, emptySet())
+        try {
+            val unchanged = LocalS3ProjectSeeder(manager, projectDirectory).apply(config)
+
+            assertFalse(unchanged.hasChanges)
+            assertEmpty(unchanged.errors)
+        } finally {
+            Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("rw-r--r--"))
+        }
+    }
+
+    fun testRecordsModificationTimeOfTouchedFiles() {
+        val file = Files.writeString(projectDirectory.resolve("readme.txt"), "original")
+        val config = LocalS3ProjectConfig(seed = mapOf("demo-bucket" to mapOf("readme.txt" to "readme.txt")))
+        LocalS3ProjectSeeder(manager, projectDirectory).apply(config)
+
+        val touched = FileTime.fromMillis(Files.getLastModifiedTime(file).toMillis() + 60_000)
+        Files.setLastModifiedTime(file, touched)
+
+        val result = LocalS3ProjectSeeder(manager, projectDirectory).apply(config)
+
+        assertFalse(result.hasChanges)
+        val userMetadata = manager.objectService()
+            .headObject("demo-bucket", "readme.txt", GetObjectOptions.builder().build()).userMetadata
+        assertEquals(touched.toMillis().toString(), userMetadata["locals3-seed-mtime"])
+        assertEquals("8", userMetadata["locals3-seed-size"])
     }
 
     fun testLimitsFilesImportedFromDirectory() {
