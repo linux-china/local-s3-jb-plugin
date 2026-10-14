@@ -8,6 +8,7 @@ import com.google.common.net.InetAddresses
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
@@ -93,6 +94,7 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
                 portField = intTextField(1..65535)
                     .bindIntText(settings::port)
                     .columns(8)
+                    .comment(LocalS3Bundle["settings.port.comment", productName(), LocalS3Settings.DEFAULT_PORT.toString()])
             }
             row {
                 checkBox(LocalS3Bundle["settings.tls.label"])
@@ -112,7 +114,7 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
                 textFieldWithBrowseButton(FileChooserDescriptorFactory.createSingleFolderDescriptor())
                     .bindText(settings::dataPath)
                     .columns(48)
-                    .comment(LocalS3Bundle["settings.dataPath.comment"])
+                    .comment(LocalS3Bundle["settings.dataPath.comment", productName(), LocalS3Settings.DEFAULT_DATA_PATH])
                     .validationOnApply {
                         if (it.text.isBlank()) error(LocalS3Bundle["settings.dataPath.required"]) else null
                     }
@@ -280,6 +282,8 @@ class LocalS3Configurable : BoundConfigurable(LocalS3Bundle["settings.displayNam
 
     companion object {
         private val BUCKET_NAME_VALIDATOR = BucketNameValidator()
+
+        private fun productName(): String = ApplicationNamesInfo.getInstance().fullProductName
 
         /**
          * Accepts `localhost`, IPv4 and IPv6 addresses, the latter optionally in brackets, e.g. `[::]`.

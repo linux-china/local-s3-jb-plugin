@@ -13,10 +13,13 @@
 - `.locals3.json` editing: JSON Schema completion and validation, invalid bucket name errors, completion and navigation
   of seed local paths, and a file icon
 - Sync `.locals3.json` from the Project view popup menu
+- One Local S3 per IDE product: the README documents the default port and data path of each product, and the settings
+  show the defaults of the current one
 
 ### Fixed
 
 - Iceberg REST catalog was not served, although it was advertised
+- Port numbers were shown with a thousands separator in notifications, e.g. `29,090`
 - TLS certificate changed on every start: it's now kept in `~/.locals3/tls/`, shared by all IDEs, and can be replaced by your own
 
 ## 0.1.0 - 2026-09-27

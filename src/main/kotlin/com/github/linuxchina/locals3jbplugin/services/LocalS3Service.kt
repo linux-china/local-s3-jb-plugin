@@ -9,6 +9,7 @@ import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.options.ShowSettingsUtil
@@ -441,7 +442,11 @@ class LocalS3Service : Disposable {
             project,
             NotificationType.INFORMATION,
             LocalS3Bundle["notification.shared.title"],
-            LocalS3Bundle["notification.shared.content", settings.endpoint],
+            LocalS3Bundle[
+                "notification.shared.content",
+                settings.endpoint,
+                ApplicationNamesInfo.getInstance().fullProductName,
+            ],
         )
         return true
     }
@@ -461,7 +466,7 @@ class LocalS3Service : Disposable {
 
     private fun notifyStartFailure(settings: LocalS3Settings, error: Exception, project: Project?) {
         val content = when {
-            error.isPortInUse() -> LocalS3Bundle["notification.startFailed.portInUse", settings.port]
+            error.isPortInUse() -> LocalS3Bundle["notification.startFailed.portInUse", settings.port.toString()]
             error.isDataLocked() -> LocalS3Bundle["notification.startFailed.dataLocked", settings.dataPath]
 
             else -> LocalS3Bundle["notification.startFailed.other", error.causes().last().message

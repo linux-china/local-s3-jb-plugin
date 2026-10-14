@@ -5,12 +5,12 @@
 **JetBrains Local S3 Plugin** is a plugin to Add S3 capabilities in JetBrains IDEs,
 and you can test S3 service quickly during development.
 
-After project opened, and an S3 server will be started automatically.
+After a project is opened, and an S3 server will be started automatically.
 
 Features:
 
 - Light and fast: only Netty, Jackson 3, and H2 MVStore dependencies 
-- S3 compatible API: `http://127.0.0.1:29090`
+- S3 compatible API: `http://127.0.0.1:29090` in IntelliJ IDEA: each IDE product has its own default port, e.g. `29094` in PyCharm
 - Credential support
 - TLS support
 - Iceberg REST Catalog: `http://127.0.0.1:29090/iceberg`, warehouse `s3://warehouse/` (can be disabled in the settings)
@@ -19,6 +19,7 @@ Features:
 - Big Data Tools compatible
 - Local S3 widget icon: Ops management and convenient actions: copy `.env` to support boto3, S3 CLI, s5cmd, Bun, OpenDAL, DataFusion etc. 
 - Project buckets and seed data: `.locals3.json` at the project root
+- One Local S3 per IDE product: instances of the same product share it, different products don't
 
 `.locals3.json` file example: 
 
@@ -36,6 +37,33 @@ Features:
 }
 ```
 <!-- Plugin description end -->
+
+## One Local S3 per IDE product
+
+Each IDE product starts its own Local S3, on its own default port and with its own data path, so that IntelliJ IDEA
+and PyCharm, for example, don't see each other's buckets:
+
+| IDE product                | Product code | Default port | Default data path   |
+|----------------------------|--------------|--------------|---------------------|
+| IntelliJ IDEA              | `IU`, `IC`   | `29090`      | `~/.locals3/IU`, `~/.locals3/IC` |
+| CLion                      | `CL`         | `29091`      | `~/.locals3/CL`     |
+| DataGrip                   | `DB`         | `29092`      | `~/.locals3/DB`     |
+| GoLand                     | `GO`         | `29093`      | `~/.locals3/GO`     |
+| PyCharm                    | `PY`, `PC`   | `29094`      | `~/.locals3/PY`, `~/.locals3/PC` |
+| PhpStorm                   | `PS`         | `29095`      | `~/.locals3/PS`     |
+| RubyMine                   | `RM`         | `29096`      | `~/.locals3/RM`     |
+| RustRover                  | `RR`         | `29097`      | `~/.locals3/RR`     |
+| Rider                      | `RD`         | `29098`      | `~/.locals3/RD`     |
+| WebStorm                   | `WS`         | `29099`      | `~/.locals3/WS`     |
+| Other IDEs                 |              | `29100`      | `~/.locals3/<code>` |
+
+Several instances of the same product, e.g. IntelliJ IDEA 2026.2 and 2026.3 opened at the same time, share one Local S3:
+the first one starts it, and the others reuse it, shown as **Shared** in the status bar. When the IDE that started it
+is closed, another one takes over with the same port and data path, so the data is kept. Use the same access key and
+secret key in all of them, so that their connection settings work with the shared Local S3.
+
+To share one Local S3 between different products, set the same port and data path in
+<kbd>Settings</kbd> > <kbd>Tools</kbd> > <kbd>Local S3</kbd> of each of them.
 
 ## Project buckets and seed data
 

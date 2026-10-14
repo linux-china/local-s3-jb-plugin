@@ -152,6 +152,11 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
 
     companion object {
         const val DEFAULT_HOST = "127.0.0.1"
+
+        /**
+         * Each IDE product has its own default port and [DEFAULT_DATA_PATH], so that it starts its own Local S3: only
+         * instances of the same product share one.
+         */
         val DEFAULT_PORT: Int by lazy {
             getProductListenPort()
         }
