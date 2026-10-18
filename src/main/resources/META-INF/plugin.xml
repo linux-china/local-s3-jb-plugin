@@ -38,6 +38,7 @@
                     icon="AllIcons.General.Web"/>
             <group id="LocalS3.CopyConnectionAs" popup="true" icon="AllIcons.Actions.Copy">
                 <action id="LocalS3.CopyDotEnv" class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3DotEnvAction"/>
+                <action id="LocalS3.CopyOpenDal" class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3OpenDalAction"/>
                 <action id="LocalS3.CopyDuckDbSecret"
                         class="com.github.linuxchina.locals3jbplugin.actions.CopyLocalS3DuckDbSecretAction"/>
                 <action id="LocalS3.CopySpringBootProperties"

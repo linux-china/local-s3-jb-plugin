@@ -90,6 +90,9 @@ When the project is opened, and each time Local S3 starts afterward, the buckets
 - The files of a directory, recursively and without hidden files, are imported under the object path, at most 256 per directory.
 - Local paths are relative to the project root; absolute paths and `~/` are accepted.
 - Existing objects are overwritten with the content of their seed files, so that changes to the seed files are imported.
+- Only the `.locals3.json` in the project root (the project base path) is applied automatically: those in the
+  subdirectories of a multi-module project, in other content roots or in attached projects are ignored. Use
+  **Sync .locals3.json** to apply one of them, its local paths being then relative to its own directory.
 
 `.locals3.json` is completed and validated with its JSON Schema, and invalid bucket names are reported as you type. The
 seed local paths are completed and navigable. Right-click it in the editor or the Project view and choose

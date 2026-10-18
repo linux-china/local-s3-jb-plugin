@@ -129,6 +129,26 @@ class CopyLocalS3DotEnvAction : CopyLocalS3ConnectionAction() {
     }
 }
 
+class CopyLocalS3OpenDalAction : CopyLocalS3ConnectionAction() {
+    override fun connection(settings: LocalS3Settings) = dotEnv(settings)
+
+    companion object {
+        fun dotEnv(settings: LocalS3Settings): String = buildString {
+            appendLine("OPENDAL_S3_ENDPOINT=${settings.endpoint}")
+            appendLine("OPENDAL_S3_REGION=${LocalS3Settings.REGION}")
+            if (hasCredentials(settings)) {
+                appendLine("OPENDAL_S3_ACCESS_KEY_ID=${settings.accessKeyId}")
+                appendLine("OPENDAL_S3_SECRET_ACCESS_KEY=${settings.secretAccessKey}")
+            } else {
+                appendLine("OPENDAL_S3_ACCESS_KEY_ID=admin")
+                appendLine("OPENDAL_S3_SECRET_ACCESS_KEY=admin")
+            }
+            val bucketName = settings.bucketNames.getOrElse(0, { "bucket-demo" })
+            appendLine("OPENDAL_S3_BUCKET=${bucketName}")
+        }
+    }
+}
+
 /**
  * Copies a DuckDB `httpfs` S3 secret. DuckDB always connects without TLS, as it doesn't trust the self-signed certificate.
  */
