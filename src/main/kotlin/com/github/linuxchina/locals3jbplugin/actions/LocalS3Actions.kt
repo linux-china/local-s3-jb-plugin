@@ -157,6 +157,7 @@ class CopyLocalS3DuckDbSecretAction : CopyLocalS3ConnectionAction() {
 
     companion object {
         fun duckDbSecret(settings: LocalS3Settings): String = buildString {
+            appendLine("load httpfs;")
             appendLine("CREATE OR REPLACE SECRET locals3 (")
             appendLine("    TYPE s3,")
             if (hasCredentials(settings)) {
