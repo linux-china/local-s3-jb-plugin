@@ -114,10 +114,10 @@ seed local paths are completed and navigable. Right-click it in the editor or th
 
 - Using JetBrains Marketplace:
 
-  Go to [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID) and install it by clicking
+  Go to [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/35345-local-s3) and install it by clicking
   the <kbd>Install to ...</kbd> button in case your IDE is running.
 
-  You can also download the [latest release](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID/versions) from
+  You can also download the [latest release](https://plugins.jetbrains.com/plugin/35345-local-s3/versions) from
   JetBrains Marketplace and install it manually using
   <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
 
