@@ -11,15 +11,14 @@ Features:
 
 - Light and fast: only Netty, Jackson 3, and H2 MVStore dependencies 
 - S3 compatible API: `http://127.0.0.1:29090` in IntelliJ IDEA: each IDE product has its own default port, e.g. `29094` in PyCharm
-- Credential support
-- TLS support
-- Iceberg REST Catalog: `http://127.0.0.1:29090/iceberg`, warehouse `s3://warehouse/` (can be disabled in the settings)
+- TLS/Credential support
+- Iceberg REST Catalog: `http://127.0.0.1:29090/iceberg`, and bucket is `s3://warehouse/` by default. You can be disabled in the settings.
 - Admin UI: `http://127.0.0.1:29090/_admin/ui`
 - Web Hosting: `http://127.0.0.1:29090`
-- Big Data Tools compatible
+- Data Tools compatible: DuckDB, DataFusion, OpenDAL, Bun, s5cmd, boto3, S3 CLI etc. 
 - Local S3 widget icon: Ops management and convenient actions: copy `.env` to support boto3, S3 CLI, s5cmd, Bun, OpenDAL, DataFusion etc. 
 - Project buckets and seed data: `.locals3.json` at the project root
-- One Local S3 per IDE product: instances of the same product share it, different products don't
+- One Local S3 per IDE product: different products have different Local S3 instances with different port and storage.
 
 `.locals3.json` file example: 
 
@@ -120,3 +119,4 @@ seed local paths are completed and navigable. Right-click it in the editor or th
   
 ## References
 
+* [Local S3](https://github.com/linux-china/local-s3): An Amazon S3 service implementation based on Netty: S3, IceBerge REST Catalog, Admin UI etc.
