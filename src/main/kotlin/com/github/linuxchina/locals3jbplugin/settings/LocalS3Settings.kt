@@ -2,7 +2,7 @@ package com.github.linuxchina.locals3jbplugin.settings
 
 import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.components.*
-import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.util.io.OSAgnosticPathUtil.expandUserHome
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -114,7 +114,7 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
         host, port, tlsEnabled, dataPath, accessKeyId, secretAccessKey, bucketNames, icebergEnabled, icebergWarehouse,
     )
 
-    fun ensureDataDirectory(): Path = Path.of(FileUtil.expandUserHome(dataPath))
+    fun ensureDataDirectory(): Path = Path.of(expandUserHome(dataPath))
         .toAbsolutePath()
         .normalize()
         .also(Files::createDirectories)
