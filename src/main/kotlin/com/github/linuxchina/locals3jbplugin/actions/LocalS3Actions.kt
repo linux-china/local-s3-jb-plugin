@@ -227,7 +227,7 @@ abstract class CopyLocalS3IcebergConnectionAction : CopyLocalS3ConnectionAction(
     }
 
     companion object {
-        const val CATALOG_NAME = "locals3"
+        const val CATALOG_NAME = "datalake"
     }
 }
 
