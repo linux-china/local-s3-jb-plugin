@@ -9,14 +9,14 @@ class LocalS3SettingsTest : BasePlatformTestCase() {
         val settings = LocalS3Settings()
 
         assertEquals("127.0.0.1", settings.host)
-        assertEquals(29090, settings.port)
+        assertEquals(39090, settings.port)
         assertFalse(settings.tlsEnabled)
         assertEquals("admin", settings.accessKeyId)
         assertEquals("admin", settings.secretAccessKey)
-        assertEquals("http://127.0.0.1:29090", settings.endpoint)
+        assertEquals("http://127.0.0.1:39090", settings.endpoint)
         assertTrue(settings.icebergEnabled)
         assertEquals("s3://warehouse/", settings.icebergWarehouse)
-        assertEquals("http://127.0.0.1:29090/iceberg", settings.icebergCatalogUri)
+        assertEquals("http://127.0.0.1:39090/iceberg", settings.icebergCatalogUri)
         assertEquals(
             Path.of(System.getProperty("user.home"), ".locals3", "IU"),
             Path.of(settings.dataPath)
@@ -36,18 +36,18 @@ class LocalS3SettingsTest : BasePlatformTestCase() {
     }
 
     fun testMapsListenHostToClientHost() {
-        val settings = LocalS3Settings().apply { port = 29090 }
+        val settings = LocalS3Settings().apply { port = 39090 }
 
         for (wildcard in listOf("0.0.0.0", "::", "[::]")) {
             settings.host = wildcard
-            assertEquals("http://127.0.0.1:29090", settings.endpoint)
+            assertEquals("http://127.0.0.1:39090", settings.endpoint)
         }
         settings.host = "192.168.1.10"
-        assertEquals("http://192.168.1.10:29090", settings.endpoint)
+        assertEquals("http://192.168.1.10:39090", settings.endpoint)
         settings.host = "::1"
-        assertEquals("http://[::1]:29090", settings.endpoint)
+        assertEquals("http://[::1]:39090", settings.endpoint)
         settings.host = "[::1]"
-        assertEquals("http://[::1]:29090", settings.endpoint)
+        assertEquals("http://[::1]:39090", settings.endpoint)
     }
 
     fun testCreatesDataDirectory() {

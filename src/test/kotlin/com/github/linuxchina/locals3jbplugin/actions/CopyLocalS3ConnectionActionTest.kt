@@ -6,7 +6,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
     private fun settings() = LocalS3Settings().apply {
         host = "0.0.0.0"
-        port = 29090
+        port = 39090
         accessKeyId = "admin"
         secretAccessKey = "it's"
         buckets = "demo-bucket"
@@ -20,8 +20,8 @@ class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
     fun testDotEnv() {
         assertEquals(
             """
-            AWS_ENDPOINT_URL=http://127.0.0.1:29090
-            AWS_ENDPOINT_URL_S3=http://127.0.0.1:29090
+            AWS_ENDPOINT_URL=http://127.0.0.1:39090
+            AWS_ENDPOINT_URL_S3=http://127.0.0.1:39090
             AWS_REGION=us-east-1
             AWS_DEFAULT_REGION=us-east-1
             AWS_ACCESS_KEY_ID=admin
@@ -41,7 +41,7 @@ class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
                 KEY_ID 'admin',
                 SECRET 'it''s',
                 REGION 'us-east-1',
-                ENDPOINT '127.0.0.1:29090',
+                ENDPOINT '127.0.0.1:39090',
                 URL_STYLE 'path',
                 USE_SSL false
             );
@@ -54,7 +54,7 @@ class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
     fun testSpringBootProperties() {
         assertEquals(
             """
-            spring.cloud.aws.s3.endpoint=http://127.0.0.1:29090
+            spring.cloud.aws.s3.endpoint=http://127.0.0.1:39090
             spring.cloud.aws.s3.path-style-access-enabled=true
             spring.cloud.aws.region.static=us-east-1
             spring.cloud.aws.credentials.access-key=admin
@@ -70,7 +70,7 @@ class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
             """
             [profile locals3]
             region = us-east-1
-            endpoint_url = http://127.0.0.1:29090
+            endpoint_url = http://127.0.0.1:39090
             aws_access_key_id = admin
             aws_secret_access_key = it's
             s3 =
@@ -87,7 +87,7 @@ class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
             catalog:
               locals3:
                 type: rest
-                uri: http://127.0.0.1:29090/iceberg
+                uri: http://127.0.0.1:39090/iceberg
             
             """.trimIndent(),
             CopyLocalS3PyIcebergConfigAction.pyIcebergConfig(settings().apply { tlsEnabled = true })
@@ -100,7 +100,7 @@ class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
             spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
             spark.sql.catalog.locals3=org.apache.iceberg.spark.SparkCatalog
             spark.sql.catalog.locals3.type=rest
-            spark.sql.catalog.locals3.uri=http://127.0.0.1:29090/iceberg
+            spark.sql.catalog.locals3.uri=http://127.0.0.1:39090/iceberg
             
             """.trimIndent(),
             CopyLocalS3SparkIcebergPropertiesAction.sparkProperties(settings())
@@ -114,7 +114,7 @@ class CopyLocalS3ConnectionActionTest : BasePlatformTestCase() {
             LOAD iceberg;
             ATTACH 'lakehouse' AS locals3 (
                 TYPE iceberg,
-                ENDPOINT 'http://127.0.0.1:29090/iceberg',
+                ENDPOINT 'http://127.0.0.1:39090/iceberg',
                 AUTHORIZATION_TYPE 'none'
             );
             

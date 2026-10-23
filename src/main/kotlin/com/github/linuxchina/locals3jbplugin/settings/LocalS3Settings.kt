@@ -197,17 +197,17 @@ class LocalS3Settings : PersistentStateComponent<LocalS3Settings.SettingsState> 
 
         private fun getProductListenPort(): Int {
             return when (currentProductCode()) {
-                "IU", "IC" -> 29090
-                "CL" -> 29091
-                "DB" -> 29092
-                "GO" -> 29093
-                "PY", "PC" -> 29094
-                "PS" -> 29095
-                "RM" -> 29096
-                "RR" -> 29097
-                "RD" -> 29098
-                "WS" -> 29099
-                else -> 29100
+                "IU", "IC" -> 39090
+                "CL" -> 39091
+                "DB" -> 39092
+                "GO" -> 39093
+                "PY", "PC" -> 39094
+                "PS" -> 39095
+                "RM" -> 39096
+                "RR" -> 39097
+                "RD" -> 39098
+                "WS" -> 39099
+                else -> 39100
             }
         }
     }

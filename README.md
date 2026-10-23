@@ -9,13 +9,13 @@ After a project is opened, an S3 server is started automatically.
 Features:
 
 - Light and fast: only Netty, Jackson 3, and H2 MVStore as dependencies
-- S3-compatible API: `http://127.0.0.1:29090` in IntelliJ IDEA; each IDE product has its own default port, e.g. `29094`
+- S3-compatible API: `http://127.0.0.1:39090` in IntelliJ IDEA; each IDE product has its own default port, e.g. `39094`
   in PyCharm
 - TLS/Credential support
-- Iceberg REST Catalog: `http://127.0.0.1:29090/iceberg`, with `s3://warehouse/` as the default bucket. It can be
+- Iceberg REST Catalog: `http://127.0.0.1:39090/iceberg`, with `s3://warehouse/` as the default bucket. It can be
   disabled in the settings.
-- Admin UI: `http://127.0.0.1:29090/_admin/ui`
-- Web Hosting: `http://127.0.0.1:29090`
+- Admin UI: `http://127.0.0.1:39090/_admin/ui`
+- Web Hosting: `http://127.0.0.1:39090`
 - Compatible with data tools: DuckDB, DataFusion, OpenDAL, Bun, s5cmd, boto3, S3 CLI, etc.
 - Local S3 widget icon: ops management and convenient actions, e.g. copying `.env` for boto3, S3 CLI, s5cmd, Bun,
   OpenDAL, DataFusion, etc.
@@ -47,17 +47,17 @@ and PyCharm, for example, don't see each other's buckets:
 
 | IDE product   | Product code | Default port | Default data path                |
 |---------------|--------------|--------------|----------------------------------|
-| IntelliJ IDEA | `IU`, `IC`   | `29090`      | `~/.locals3/IU`, `~/.locals3/IC` |
-| CLion         | `CL`         | `29091`      | `~/.locals3/CL`                  |
-| DataGrip      | `DB`         | `29092`      | `~/.locals3/DB`                  |
-| GoLand        | `GO`         | `29093`      | `~/.locals3/GO`                  |
-| PyCharm       | `PY`, `PC`   | `29094`      | `~/.locals3/PY`, `~/.locals3/PC` |
-| PhpStorm      | `PS`         | `29095`      | `~/.locals3/PS`                  |
-| RubyMine      | `RM`         | `29096`      | `~/.locals3/RM`                  |
-| RustRover     | `RR`         | `29097`      | `~/.locals3/RR`                  |
-| Rider         | `RD`         | `29098`      | `~/.locals3/RD`                  |
-| WebStorm      | `WS`         | `29099`      | `~/.locals3/WS`                  |
-| Other IDEs    |              | `29100`      | `~/.locals3/<code>`              |
+| IntelliJ IDEA | `IU`, `IC`   | `39090`      | `~/.locals3/IU`, `~/.locals3/IC` |
+| CLion         | `CL`         | `39091`      | `~/.locals3/CL`                  |
+| DataGrip      | `DB`         | `39092`      | `~/.locals3/DB`                  |
+| GoLand        | `GO`         | `39093`      | `~/.locals3/GO`                  |
+| PyCharm       | `PY`, `PC`   | `39094`      | `~/.locals3/PY`, `~/.locals3/PC` |
+| PhpStorm      | `PS`         | `39095`      | `~/.locals3/PS`                  |
+| RubyMine      | `RM`         | `39096`      | `~/.locals3/RM`                  |
+| RustRover     | `RR`         | `39097`      | `~/.locals3/RR`                  |
+| Rider         | `RD`         | `39098`      | `~/.locals3/RD`                  |
+| WebStorm      | `WS`         | `39099`      | `~/.locals3/WS`                  |
+| Other IDEs    |              | `39100`      | `~/.locals3/<code>`              |
 
 Several instances of the same product, e.g. IntelliJ IDEA 2026.2 and 2026.3 opened at the same time, share one Local S3:
 the first one starts it, and the others reuse it, shown as **Shared** in the status bar. When the IDE that started it
