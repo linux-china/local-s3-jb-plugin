@@ -275,6 +275,10 @@ class CopyLocalS3DuckDbIcebergAttachAction : CopyLocalS3IcebergConnectionAction(
             val warehouse = settings.icebergWarehouse.replaceFirst(Regex("^s3a?://"), "").trimEnd('/')
             appendLine("INSTALL iceberg;")
             appendLine("LOAD iceberg;")
+            if(settings.icebergCatalogUri.startsWith("https://")) {
+                appendLine("-- Disable tls check from duckdb 1.5.5")
+                appendLine("SET enable_curl_server_cert_verification = false;")
+            }
             appendLine("ATTACH '${warehouse.replace("'", "''")}' AS $CATALOG_NAME (")
             appendLine("    TYPE iceberg,")
             appendLine("    ENDPOINT '${settings.icebergCatalogUri}',")
