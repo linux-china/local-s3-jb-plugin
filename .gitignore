@@ -123,3 +123,5 @@ todo.md
 .kotlin
 verification-202*
 .DS_Store
+.envrc
+review.md
