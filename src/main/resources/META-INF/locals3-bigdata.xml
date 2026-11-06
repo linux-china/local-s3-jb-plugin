@@ -1,7 +1,6 @@
 <idea-plugin>
     <depends>com.intellij.bigdatatools.core</depends>
     <depends>com.intellij.bigdatatools.rfs</depends>
-    <depends>intellij.bigdatatools.awsBase</depends>
 
     <applicationListeners>
         <listener class="com.github.linuxchina.locals3jbplugin.startup.SyncLocalS3ConnectionListener"
