@@ -4,10 +4,11 @@
 
 ## [Unreleased]
 
-## 0.1.1 - 2026-10-26
+## 0.1.1-263
 
 ### Fixed
 
+- Compatible with 2026.3
 - Fix some compatible bugs with Iceberg REST Catalog
 - Fix some S3 Vectors/Tables bugs
 
