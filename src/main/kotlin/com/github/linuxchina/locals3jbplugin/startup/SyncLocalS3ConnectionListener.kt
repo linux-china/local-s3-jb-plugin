@@ -4,12 +4,12 @@ import com.github.linuxchina.locals3jbplugin.services.LocalS3StateListener
 import com.github.linuxchina.locals3jbplugin.settings.LocalS3Settings
 import com.intellij.bigdatatools.awsBase.connection.auth.AuthenticationType
 import com.intellij.bigdatatools.awsBase.settings.AwsCompatibleConnectionDataBase
+import com.intellij.bigdatatools.hdfs.S3ConnectionGroup
+import com.intellij.bigdatatools.hdfs.aws.s3.S3ConnectionData
 import com.intellij.credentialStore.Credentials
 import com.intellij.openapi.application.ApplicationManager
 import com.jetbrains.bigdatatools.common.filestorages.BucketFilterType
 import com.jetbrains.bigdatatools.common.settings.GlobalConnectionSettings
-import org.com.jetbrains.bigdatatools.S3ConnectionGroup
-import org.com.jetbrains.bigdatatools.aws.s3.S3ConnectionData
 
 /**
  * Syncs the Big Data Tools connection once Local S3 is up, including after a restart caused by a settings change.
@@ -35,7 +35,8 @@ internal object LocalS3Connection {
     fun sync() {
         val connectionSettings = GlobalConnectionSettings.getInstance()
         val settings = LocalS3Settings.getInstance()
-        val existingConnection = connectionSettings.getConnections().firstOrNull { it.innerId == LOCAL_S3_CONNECTION_ID }
+        val existingConnection =
+            connectionSettings.getConnections().firstOrNull { it.innerId == LOCAL_S3_CONNECTION_ID }
 
         if (existingConnection is S3ConnectionData && existingConnection.matches(settings)) {
             return
