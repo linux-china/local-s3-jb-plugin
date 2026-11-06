@@ -17,28 +17,27 @@ kotlin {
 
 dependencies {
     implementation("org.mvnsearch:local-s3-rest:2.5.0-SNAPSHOT") {
-        exclude(group = "org.slf4j", module = "slf4j-api")
         exclude(group = "org.jspecify", module = "jspecify")
         // exclude netty dependencies because bundled with JetBrains platform
-        exclude(group = "io.netty", module = "netty-transport")
-        exclude(group = "io.netty", module = "netty-codec-http")
-        exclude(group = "io.netty", module = "netty-handler")
+        // exclude(group = "io.netty", module = "netty-transport")
+        // exclude(group = "io.netty", module = "netty-codec-http")
+        // exclude(group = "io.netty", module = "netty-handler")
     }
+    // Bundle SLF4J 2.x with the JUL provider (same as the IDE platform, so logs go to idea.log).
+    // Big Data Tools RFS (parent classloader via optional depends) ships SLF4J 1.7 + reload4j inside
+    // apache.hadoop.client.jar, whose StaticLoggerBinder fails to initialize and breaks LocalS3.<clinit>.
+    implementation("org.slf4j:slf4j-api:2.0.19")
+    implementation("org.slf4j:slf4j-jdk14:2.0.19")
     testImplementation("junit:junit:4.13.2")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
-        intellijIdea("2026.2")
+        intellijIdea("2026.3")
         bundledPlugin("com.intellij.modules.json")
         testFramework(TestFrameworkType.Platform)
-//        plugin("com.intellij.bigdatatools", "262.8665.337")
-        plugin("intellij.bigdatatools.awsBase", "262.8665.369")
-        plugin("intellij.bigdatatools.gcloud", "262.8665.369")
-        plugin("intellij.bigdatatools.azure", "262.8665.369")
-        plugin("com.intellij.bigdatatools.core", "262.8665.337")
-        plugin("intellij.bigdatatools.coreUi", "262.8665.173")
-        plugin("com.intellij.bigdatatools.rfs", "262.8665.176")
-        plugin("com.intellij.bigdatatools.binary.files", "262.8665.176")
+        plugin("com.intellij.bigdatatools.core", "263.7307.200")
+        plugin("com.intellij.bigdatatools.rfs", "263.7307.200")
+
     }
 }
 
